@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { Metrica, FrequenciaMetrica } from "@/types"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -71,10 +71,7 @@ export default function MetricasPage() {
   const [freqFiltro, setFreqFiltro] = useState<FrequenciaMetrica | null>(null)
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabaseClient()
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }

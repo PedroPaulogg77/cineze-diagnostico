@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -145,10 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabaseClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase
@@ -186,10 +183,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function handleSignOut() {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabaseClient()
     await supabase.auth.signOut()
     router.push("/login")
   }

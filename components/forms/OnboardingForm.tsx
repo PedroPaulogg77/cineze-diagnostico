@@ -2,15 +2,12 @@
 
 import { useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { OnboardingFormData } from "@/types"
 import type { Database } from "@/types/database"
 
 function getSupabase() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  return createBrowserSupabaseClient()
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -573,7 +570,8 @@ export default function OnboardingForm() {
   return (
     <>
       {/* Keyframe animations */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes slideInR { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideInL { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .slide-in-r { animation: slideInR 280ms forwards; }
