@@ -20,22 +20,37 @@ function LoginForm() {
     setError("")
     setLoading(true)
 
+    console.log("[LOGIN] Iniciando fluxo de login...")
+    console.log("[LOGIN] Email:", email)
+
     try {
+      console.log("[LOGIN] Criando cliente Supabase browser...")
       const supabase = createBrowserSupabaseClient()
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log("[LOGIN] Enviando credenciais para API Supabase...")
+
+      // Promise race para evitar hang infinito
+      const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout na requisição de login. O servidor demorou muito para responder.")), 15000)
+      )
+
+      const authPromise = supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any
+
+      console.log("[LOGIN] Resposta do Supabase:", { data, error })
 
       if (error) {
-        console.error("Login error:", error)
-        setError("E-mail ou senha incorretos.")
+        console.error("[LOGIN] Login error:", error)
+        setError(error?.message || "E-mail ou senha incorretos.")
         setLoading(false)
         return
       }
 
+      console.log("[LOGIN] Sucesso. Redirecionando para:", redirect)
       window.location.href = redirect
     } catch (err: any) {
-      console.error("Unexpected error during login:", err)
-      setError("Ocorreu um erro ao conectar com o servidor.")
+      console.error("[LOGIN] Unexpected error during login:", err)
+      setError(err?.message || "Ocorreu um erro ao conectar com o servidor.")
       setLoading(false)
     }
   }
