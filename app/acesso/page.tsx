@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
@@ -10,7 +10,7 @@ const WHATSAPP_URL = "https://wa.me/5511999999999" // substitua pelo número cor
 const POLLING_INTERVAL_MS = 3000
 const TIMEOUT_MS = 60000
 
-export default function AcessoPage() {
+function AcessoContent() {
   const searchParams = useSearchParams()
   const orderNsu = searchParams.get("order_nsu")
 
@@ -81,16 +81,30 @@ export default function AcessoPage() {
   }, [orderNsu])
 
   return (
+    <div
+      className={`max-w-md w-full text-center transition-all duration-700 ease-out ${visivel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        }`}
+    >
+      {estado === "carregando" && <TelaCarregando />}
+      {estado === "sucesso" && <TelaSucesso email={email} />}
+      {estado === "timeout" && <TelaTimeout />}
+      {estado === "erro" && <TelaErro />}
+    </div>
+  )
+}
+
+export default function AcessoPage() {
+  return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div
-        className={`max-w-md w-full text-center transition-all duration-700 ease-out ${visivel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-          }`}
+      <Suspense
+        fallback={
+          <div className="max-w-md w-full text-center">
+            <TelaCarregando />
+          </div>
+        }
       >
-        {estado === "carregando" && <TelaCarregando />}
-        {estado === "sucesso" && <TelaSucesso email={email} />}
-        {estado === "timeout" && <TelaTimeout />}
-        {estado === "erro" && <TelaErro />}
-      </div>
+        <AcessoContent />
+      </Suspense>
     </main>
   )
 }
