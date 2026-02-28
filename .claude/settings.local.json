@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la app/\\\\\\(auth\\\\\\)/)",
+      "Bash(head -50 app/\\\\\\(auth\\\\\\)/login/page.tsx)",
+      "Bash(ls -la app/\\\\\\(dashboard\\\\\\)/dashboard/)",
+      "Bash(head -50 \"app/\\(dashboard\\)/dashboard/raio-x/page.tsx\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm)",
+      "Bash(netstat -ano)"
+    ]
+  }
+}
