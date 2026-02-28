@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 function LoginForm() {
   const router = useRouter()
@@ -20,21 +20,25 @@ function LoginForm() {
     setError("")
     setLoading(true)
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    try {
+      const supabase = createBrowserSupabaseClient()
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setError("E-mail ou senha incorretos.")
+      if (error) {
+        console.error("Login error:", error)
+        setError("E-mail ou senha incorretos.")
+        setLoading(false)
+        return
+      }
+
+      router.push(redirect)
+      router.refresh()
+    } catch (err: any) {
+      console.error("Unexpected error during login:", err)
+      setError("Ocorreu um erro ao conectar com o servidor.")
       setLoading(false)
-      return
     }
-
-    router.push(redirect)
-    router.refresh()
   }
 
   return (
