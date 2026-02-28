@@ -32,8 +32,7 @@ function LoginForm() {
         return
       }
 
-      router.push(redirect)
-      router.refresh()
+      window.location.href = redirect
     } catch (err: any) {
       console.error("Unexpected error during login:", err)
       setError("Ocorreu um erro ao conectar com o servidor.")
