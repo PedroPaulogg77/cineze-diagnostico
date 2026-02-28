@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase"
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase-server"
 import {
   PROMPT_AGENTE_1,
   PROMPT_AGENTE_2,

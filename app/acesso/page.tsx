@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 type Estado = "carregando" | "sucesso" | "timeout" | "erro"
 
@@ -83,9 +83,8 @@ export default function AcessoPage() {
   return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div
-        className={`max-w-md w-full text-center transition-all duration-700 ease-out ${
-          visivel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-        }`}
+        className={`max-w-md w-full text-center transition-all duration-700 ease-out ${visivel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
       >
         {estado === "carregando" && <TelaCarregando />}
         {estado === "sucesso" && <TelaSucesso email={email} />}

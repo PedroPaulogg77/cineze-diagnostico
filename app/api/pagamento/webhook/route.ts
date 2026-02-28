@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminSupabaseClient } from "@/lib/supabase"
+import { createAdminSupabaseClient } from "@/lib/supabase-server"
 
 // ─── Tipos do payload InfinitePay ─────────────────────────────────────────────
 //

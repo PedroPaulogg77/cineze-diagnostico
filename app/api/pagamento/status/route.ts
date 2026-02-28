@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminSupabaseClient } from "@/lib/supabase"
+import { createAdminSupabaseClient } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   const orderNsu = request.nextUrl.searchParams.get("order_nsu")
