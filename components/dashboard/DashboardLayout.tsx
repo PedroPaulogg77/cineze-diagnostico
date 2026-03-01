@@ -123,6 +123,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [businessName, setBusinessName] = useState("Meu Negócio")
   const [initials, setInitials] = useState("ME")
+  const [needsDiagnostico, setNeedsDiagnostico] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { group, label } = getActiveInfo(pathname)
@@ -143,11 +144,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem("cineze-theme", theme)
   }, [theme])
 
-  // Fetch user profile
+  // Fetch user profile and check if a completed diagnostico exists
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
+
       supabase
         .from("profiles")
         .select("nome_negocio, nome_responsavel")
@@ -158,6 +160,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           const nameForInitials = data?.nome_negocio || data?.nome_responsavel || user.email || ""
           setInitials(getInitials(nameForInitials))
         })
+
+      // Check if user has at least one completed diagnostico
+      const { data: diag } = await supabase
+        .from("diagnosticos")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "concluido")
+        .limit(1)
+        .maybeSingle()
+
+      if (!diag) {
+        setNeedsDiagnostico(true)
+      }
     })
   }, [])
 
@@ -411,6 +426,79 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       ` }} />
 
       <div className="dl-app">
+        {/* Diagnostico pending overlay */}
+        {needsDiagnostico && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 500,
+              backgroundColor: "#060D1A",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              textAlign: "center",
+              fontFamily: "Inter, sans-serif",
+              color: "#FFFFFF",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: 460 }}>
+              {/* Icon */}
+              <div style={{
+                width: 64, height: 64, borderRadius: 18,
+                background: "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(6,183,216,0.15))",
+                border: "1px solid rgba(6,183,216,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 24px",
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06B7D8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+
+              <p style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8B9DB5", marginBottom: 12 }}>
+                Diagnóstico pendente
+              </p>
+              <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 12, lineHeight: 1.2 }}>
+                Suas respostas estão salvas.
+              </h1>
+              <p style={{ fontSize: 15, color: "#8B9DB5", lineHeight: 1.6, marginBottom: 32 }}>
+                Houve um problema ao gerar seu diagnóstico.<br />
+                Clique abaixo para tentar novamente — não precisará preencher nada de novo.
+              </p>
+
+              <button
+                onClick={() => router.push("/loading")}
+                style={{
+                  width: "100%",
+                  padding: "18px 24px",
+                  borderRadius: 14,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#FFFFFF",
+                  background: "linear-gradient(135deg, #0066FF, #06B7D8)",
+                  border: "none",
+                  cursor: "pointer",
+                  marginBottom: 16,
+                }}
+              >
+                Gerar meu diagnóstico →
+              </button>
+
+              <button
+                onClick={() => router.push("/onboarding")}
+                style={{ fontSize: 14, color: "#8B9DB5", background: "none", border: "none", cursor: "pointer" }}
+              >
+                Editar respostas primeiro
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Mobile overlay */}
         <div
           className={`dl-overlay${sidebarOpen ? " active" : ""}`}

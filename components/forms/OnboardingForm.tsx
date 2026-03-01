@@ -1,13 +1,21 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { OnboardingFormData } from "@/types"
-import type { Database } from "@/types/database"
 
 function getSupabase() {
   return createBrowserSupabaseClient()
+}
+
+// ─── localStorage helpers ──────────────────────────────────────────────────────
+
+function lsGet(key: string): string | null {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+function lsSet(key: string, value: string) {
+  try { localStorage.setItem(key, value) } catch { /* ignore */ }
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -430,6 +438,90 @@ function FieldRenderer({ field, data, onChange }: {
   return null
 }
 
+// ─── Retry Screen ──────────────────────────────────────────────────────────────
+
+function RetryScreen({
+  nomenegocio,
+  onRetry,
+  onEdit,
+  loading,
+  error,
+}: {
+  nomenegocio: string
+  onRetry: () => void
+  onEdit: () => void
+  loading: boolean
+  error: string
+}) {
+  return (
+    <div
+      className="flex flex-col min-h-screen items-center justify-center px-5 text-center"
+      style={{ backgroundColor: "#060D1A", color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
+    >
+      <div className="w-full max-w-[480px]">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(6,183,216,0.15))", border: "1px solid rgba(0,102,255,0.3)" }}
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06B7D8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        </div>
+
+        <p className="text-[13px] uppercase tracking-widest mb-3" style={{ color: "#8B9DB5" }}>
+          Formulário salvo
+        </p>
+        <h1 className="text-[28px] font-bold mb-3">
+          {nomenegocio || "Seu negócio"} está pronto.
+        </h1>
+        <p className="text-base leading-relaxed mb-8" style={{ color: "#8B9DB5" }}>
+          Suas respostas foram salvas. Clique abaixo para gerar o diagnóstico completo com inteligência artificial.
+        </p>
+
+        {error && (
+          <p className="text-[14px] mb-4 px-4 py-3 rounded-xl" style={{ color: "#FF4A4A", background: "rgba(255,74,74,0.1)", border: "1px solid rgba(255,74,74,0.2)" }}>
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={loading}
+          className="w-full py-[18px] rounded-xl text-base font-bold text-white transition-all disabled:opacity-60 mb-4"
+          style={{ background: "linear-gradient(135deg, #0066FF, #06B7D8)" }}
+        >
+          {loading ? "Iniciando..." : "Gerar meu diagnóstico →"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onEdit}
+          className="text-[14px] transition-colors"
+          style={{ color: "#8B9DB5" }}
+        >
+          Editar respostas
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Init Loading Screen ───────────────────────────────────────────────────────
+
+function InitLoadingScreen() {
+  return (
+    <div className="flex flex-col min-h-screen items-center justify-center" style={{ backgroundColor: "#060D1A" }}>
+      <style dangerouslySetInnerHTML={{ __html: "@keyframes spin { 100% { transform: rotate(360deg); } }" }} />
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(6,183,216,0.2)", borderTopColor: "#06B7D8", animation: "spin 1s linear infinite" }} />
+    </div>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function OnboardingForm() {
@@ -441,9 +533,59 @@ export default function OnboardingForm() {
   const [isNavigating, setIsNavigating] = useState(false)
   const [submitError, setSubmitError] = useState("")
 
+  // "loading" → checking localStorage, "form" → show form, "retry" → show retry screen
+  const [initState, setInitState] = useState<"loading" | "form" | "retry">("loading")
+  const [savedNomenegocio, setSavedNomenegocio] = useState("")
+  const [retryLoading, setRetryLoading] = useState(false)
+  const [retryError, setRetryError] = useState("")
+
+  const userIdRef = useRef("")
+  const userEmailRef = useRef("")
+
   const block = BLOCKS[currentBlock]
   const isLastBlock = currentBlock === BLOCKS.length - 1
   const progressPct = (currentBlock / 10) * 100
+
+  // ── Init: load saved data from localStorage ────────────────────────────────
+
+  useEffect(() => {
+    async function init() {
+      const supabase = getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setInitState("form"); return }
+
+      userIdRef.current = user.id
+      userEmailRef.current = user.email ?? ""
+
+      const completed = lsGet(`cineze_form_completed_${user.id}`) === "true"
+      const savedRaw = lsGet(`cineze_form_data_${user.id}`)
+
+      if (savedRaw) {
+        try {
+          const saved = JSON.parse(savedRaw) as FormData
+          setFormData(saved)
+          setSavedNomenegocio((saved.b1_nome as string) || "")
+          if (completed) {
+            setInitState("retry")
+            return
+          }
+        } catch { /* corrupted data — ignore */ }
+      }
+
+      setInitState("form")
+    }
+    init()
+  }, [])
+
+  // ── Auto-save on block navigation ──────────────────────────────────────────
+
+  function saveProgress(data: FormData) {
+    const userId = userIdRef.current
+    if (!userId) return
+    lsSet(`cineze_form_data_${userId}`, JSON.stringify(data))
+  }
+
+  // ── Field updates ──────────────────────────────────────────────────────────
 
   const updateField = useCallback((id: string, value: FormValue) => {
     setFormData(prev => ({ ...prev, [id]: value }))
@@ -454,6 +596,8 @@ export default function OnboardingForm() {
       return next
     })
   }, [])
+
+  // ── Validation ─────────────────────────────────────────────────────────────
 
   function validateCurrentBlock(): boolean {
     const newErrors: Record<string, string> = {}
@@ -474,13 +618,11 @@ export default function OnboardingForm() {
         if (!val) {
           newErrors[field.id] = "Selecione uma opção."
         } else {
-          // Validate visible conditional sub-fields
           const matches = Array.isArray(f.condMatch) ? f.condMatch : [f.condMatch]
           if (matches.includes(val as string)) {
             const subFields = f.condFields ?? (f.condField ? [f.condField] : [])
             for (const sf of subFields) {
               if ((sf as SimpleField).optional) continue
-              // Skip multi cards inside condFields (optional validation)
               if (sf.type === "cards" || sf.type === "cards_grid") continue
               const sv = formData[sf.id]
               if (!sv || (typeof sv === "string" && sv.trim() === "")) {
@@ -498,16 +640,15 @@ export default function OnboardingForm() {
     }
 
     setErrors(newErrors)
-
     if (Object.keys(newErrors).length > 0) {
-      // Scroll to first error
-      const firstErrId = Object.keys(newErrors)[0]
-      const el = document.getElementById(`group_${firstErrId}`)
+      const el = document.getElementById(`group_${Object.keys(newErrors)[0]}`)
       el?.scrollIntoView({ behavior: "smooth", block: "center" })
       return false
     }
     return true
   }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
 
   function navigate(direction: "forward" | "backward") {
     if (isNavigating) return
@@ -523,12 +664,15 @@ export default function OnboardingForm() {
 
   function handleNext() {
     if (!validateCurrentBlock()) return
+    saveProgress(formData) // persiste no localStorage
     navigate("forward")
   }
 
   function handlePrev() {
     navigate("backward")
   }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
 
   async function handleSubmit() {
     if (!validateCurrentBlock()) return
@@ -538,12 +682,14 @@ export default function OnboardingForm() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSubmitError("Sessão expirada. Recarregue a página."); return }
 
-    // Build payload for the API
+    userIdRef.current = user.id
+    userEmailRef.current = user.email ?? ""
+
     const payload = buildApiPayload(formData, user.email ?? "")
 
-    // Persist to onboarding_respostas
+    // Persist to DB (fields that always existed)
     const objetivo = formData.b10_objetivo
-    await supabase.from("onboarding_respostas").upsert({
+    const { error: upsertError } = await supabase.from("onboarding_respostas").upsert({
       user_id: user.id,
       objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
       descricao_clientes: (formData.b3_ideal as string) || "",
@@ -552,7 +698,8 @@ export default function OnboardingForm() {
       completed: true,
     }, { onConflict: "user_id" })
 
-    // Update profile with extracted basic fields
+    if (upsertError) console.error("onboarding_respostas upsert error:", upsertError)
+
     await supabase.from("profiles").update({
       nome_negocio: (formData.b1_nome as string) || "",
       cidade_bairro: (formData.b1_local as string) || "",
@@ -561,15 +708,67 @@ export default function OnboardingForm() {
       onboarding_completo: true,
     }).eq("id", user.id)
 
-    // Hand off to loading page via sessionStorage
-    sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payload))
+    // Persist form + payload to localStorage for retry resilience
+    lsSet(`cineze_form_data_${user.id}`, JSON.stringify(formData))
+    lsSet(`cineze_form_completed_${user.id}`, "true")
+    lsSet(`cineze_api_payload_${user.id}`, JSON.stringify(payload))
 
+    sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payload))
     router.push("/loading")
+  }
+
+  // ── Retry (from retry screen) ──────────────────────────────────────────────
+
+  async function handleRetry() {
+    setRetryError("")
+    setRetryLoading(true)
+    try {
+      const supabase = getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setRetryError("Sessão expirada. Recarregue a página.")
+        setRetryLoading(false)
+        return
+      }
+
+      // Read api_payload from localStorage
+      let payload: OnboardingFormData | null = null
+      const raw = lsGet(`cineze_api_payload_${user.id}`)
+      if (raw) {
+        try { payload = JSON.parse(raw) as OnboardingFormData } catch { /* ignore */ }
+      }
+
+      // Fallback: rebuild from saved formData
+      if (!payload) {
+        payload = buildApiPayload(formData, user.email ?? "")
+      }
+
+      sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payload))
+      router.push("/loading")
+    } catch {
+      setRetryError("Erro ao carregar dados. Tente novamente.")
+      setRetryLoading(false)
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (initState === "loading") return <InitLoadingScreen />
+
+  if (initState === "retry") {
+    return (
+      <RetryScreen
+        nomenegocio={savedNomenegocio}
+        onRetry={handleRetry}
+        onEdit={() => setInitState("form")}
+        loading={retryLoading}
+        error={retryError}
+      />
+    )
   }
 
   return (
     <>
-      {/* Keyframe animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes slideInR { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -581,7 +780,6 @@ export default function OnboardingForm() {
       ` }} />
 
       <div className="flex flex-col min-h-screen pb-[80px]" style={{ backgroundColor: "#060D1A", color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}>
-        {/* Header */}
         <header className="text-center pt-8 pb-0">
           <div className="text-2xl font-bold tracking-tight mb-1">cineze</div>
           <div className="w-full h-1" style={{ backgroundColor: "#1A3050" }}>
@@ -592,9 +790,7 @@ export default function OnboardingForm() {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 w-full max-w-[640px] mx-auto px-5 pt-10 pb-5">
-          {/* Block header */}
           <div className="mb-8">
             <span className="block text-[13px] uppercase tracking-wide mb-3" style={{ color: "#8B9DB5" }}>
               Bloco {block.id} de 10 — {block.name}
@@ -603,7 +799,6 @@ export default function OnboardingForm() {
             <p className="text-base leading-relaxed" style={{ color: "#8B9DB5" }}>{block.subtitle}</p>
           </div>
 
-          {/* Animated fields container */}
           <div className={animClass}>
             <div className="flex flex-col gap-6">
               {block.fields.map(field => (
@@ -616,7 +811,6 @@ export default function OnboardingForm() {
                   {errors[field.id] && (
                     <p className="text-[13px]" style={{ color: "#FF4A4A" }}>{errors[field.id]}</p>
                   )}
-                  {/* Conditional sub-field errors for cards_cond */}
                   {field.type === "cards_cond" &&
                     ((field as CardsCondField).condFields ?? ((field as CardsCondField).condField ? [(field as CardsCondField).condField!] : [])).map(sf =>
                       errors[sf.id] ? (
@@ -634,9 +828,8 @@ export default function OnboardingForm() {
           )}
         </main>
 
-        {/* Footer */}
         <footer
-          className="fixed bottom-0 left-0 w-full px-5 py-4 flex items-center justify-between z-10"
+          className="fixed bottom-0 left-0 w-full px-5 py-4 z-10"
           style={{ backgroundColor: "rgba(6,13,26,0.95)", backdropFilter: "blur(10px)" }}
         >
           <div className="w-full max-w-[640px] mx-auto flex items-center justify-between">

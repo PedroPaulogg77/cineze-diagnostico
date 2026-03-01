@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { OnboardingFormData } from "@/types"
 
 const LOADING_TEXTS = [
@@ -20,78 +21,104 @@ export default function LoadingPage() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState("")
   const called = useRef(false)
+  const payloadRef = useRef<OnboardingFormData | null>(null)
+  const timersRef = useRef<{ text?: ReturnType<typeof setInterval>; progress?: ReturnType<typeof setTimeout> }>({})
+
+  function clearTimers() {
+    clearInterval(timersRef.current.text)
+    clearTimeout(timersRef.current.progress)
+  }
+
+  const runGeneration = useCallback(async () => {
+    if (!payloadRef.current) {
+      router.replace("/onboarding")
+      return
+    }
+
+    setError("")
+    setProgress(0)
+    setLoadingText(LOADING_TEXTS[0])
+
+    let textIdx = 0
+    timersRef.current.text = setInterval(() => {
+      textIdx++
+      if (textIdx < LOADING_TEXTS.length) setLoadingText(LOADING_TEXTS[textIdx])
+    }, 10000)
+    timersRef.current.progress = setTimeout(() => setProgress(90), 100)
+
+    try {
+      const res = await fetch("/api/diagnostico/gerar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payloadRef.current),
+      })
+
+      clearTimers()
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+      }
+
+      const { id } = (await res.json()) as { id: string }
+
+      setLoadingText("Diagnóstico gerado com sucesso!")
+      setProgress(100)
+      sessionStorage.removeItem("cineze_onboarding_payload")
+
+      setTimeout(() => {
+        router.replace(`/dashboard/raio-x?id=${id}`)
+      }, 800)
+    } catch (err) {
+      clearTimers()
+      setProgress(0)
+      const msg = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(`Não foi possível gerar o diagnóstico: ${msg}`)
+    }
+  }, [router])
 
   useEffect(() => {
     if (called.current) return
     called.current = true
 
-    const raw = sessionStorage.getItem("cineze_onboarding_payload")
-    if (!raw) {
-      // No payload — already processed or direct navigation
-      router.replace("/dashboard/raio-x")
-      return
-    }
-
-    let payload: OnboardingFormData
-    try {
-      payload = JSON.parse(raw) as OnboardingFormData
-    } catch {
-      setError("Erro ao ler dados do formulário. Volte ao onboarding.")
-      return
-    }
-
-    // Rotate loading text every 10s
-    let textIdx = 0
-    const textInterval = setInterval(() => {
-      textIdx++
-      if (textIdx < LOADING_TEXTS.length) setLoadingText(LOADING_TEXTS[textIdx])
-    }, 10000)
-
-    // Animate progress bar to 90% over 60s (eases to show work happening)
-    const progressTimeout = setTimeout(() => setProgress(90), 100)
-
-    async function callApi() {
-      try {
-        const res = await fetch("/api/diagnostico/gerar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-
-        clearInterval(textInterval)
-        clearTimeout(progressTimeout)
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+    async function init() {
+      // 1. Try sessionStorage first
+      const raw = sessionStorage.getItem("cineze_onboarding_payload")
+      if (raw) {
+        try {
+          payloadRef.current = JSON.parse(raw) as OnboardingFormData
+          runGeneration()
+          return
+        } catch {
+          // fall through to DB
         }
-
-        const { id } = (await res.json()) as { id: string }
-
-        setLoadingText("Diagnóstico gerado com sucesso!")
-        setProgress(100)
-
-        sessionStorage.removeItem("cineze_onboarding_payload")
-
-        setTimeout(() => {
-          router.replace(`/dashboard/raio-x?id=${id}`)
-        }, 800)
-      } catch (err) {
-        clearInterval(textInterval)
-        clearTimeout(progressTimeout)
-        setProgress(0)
-        const msg = err instanceof Error ? err.message : "Erro desconhecido"
-        setError(`Não foi possível gerar o diagnóstico: ${msg}`)
       }
+
+      // 2. Fallback: load api_payload from localStorage (persisted on form submit)
+      try {
+        const supabase = createBrowserSupabaseClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const raw = localStorage.getItem(`cineze_api_payload_${user.id}`)
+          if (raw) {
+            payloadRef.current = JSON.parse(raw) as OnboardingFormData
+            sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payloadRef.current))
+            runGeneration()
+            return
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // 3. No data anywhere — send to onboarding
+      router.replace("/onboarding")
     }
 
-    callApi()
+    init()
 
-    return () => {
-      clearInterval(textInterval)
-      clearTimeout(progressTimeout)
-    }
-  }, [router])
+    return () => clearTimers()
+  }, [router, runGeneration])
 
   return (
     <div
@@ -110,9 +137,16 @@ export default function LoadingPage() {
           </p>
           <p className="text-[14px] mb-6" style={{ color: "#8B9DB5" }}>{error}</p>
           <button
-            onClick={() => router.push("/onboarding")}
-            className="px-6 py-3 rounded-xl text-base font-semibold text-white"
+            onClick={runGeneration}
+            className="w-full px-6 py-4 rounded-xl text-base font-semibold text-white mb-3"
             style={{ background: "linear-gradient(135deg, #0066FF, #06B7D8)" }}
+          >
+            Tentar novamente
+          </button>
+          <button
+            onClick={() => router.push("/onboarding")}
+            className="text-[14px] transition-colors"
+            style={{ color: "#8B9DB5" }}
           >
             Voltar ao formulário
           </button>
