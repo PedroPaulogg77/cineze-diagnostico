@@ -343,7 +343,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
            box-shadow: 0 4px 24px -8px rgba(0,0,0,0.1);
         }
         .dl-content-area { padding: 0 16px 32px; margin-top: 12px; }
-        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .dl-overlay.active { display: block; opacity: 1; pointer-events: auto; }
         
         .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
@@ -356,6 +356,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         /* DESKTOP SCALING (Tablets & Up) */
         @media (min-width: 768px) {
+          .dl-overlay { display: none !important; }
           .dl-sidebar {
             position: relative;
             transform: translateX(0);
@@ -409,13 +410,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-content-header { min-height: 40px; }
       ` }} />
 
-      {/* Mobile overlay */}
-      <div
-        className={`dl-overlay${sidebarOpen ? " active" : ""}`}
-        onClick={closeSidebar}
-      />
-
       <div className="dl-app">
+        {/* Mobile overlay */}
+        <div
+          className={`dl-overlay${sidebarOpen ? " active" : ""}`}
+          onClick={closeSidebar}
+        />
+
         {/* Sidebar */}
         <aside className={`dl-sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="dl-sidebar-header">
