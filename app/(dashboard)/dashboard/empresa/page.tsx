@@ -102,58 +102,70 @@ export default function EmpresaPage() {
   const d = data!
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="emp-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+        
+        .emp-container { padding: 16px; }
+        .emp-header { margin-bottom: 24px; }
+        .emp-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .emp-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .emp-card { padding: 24px; margin-bottom: 24px; }
+        .emp-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .emp-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .emp-item-card { 
+          background: rgba(255,255,255,0.02); 
+          border: 1px solid var(--border-color); 
+          border-radius: 16px; 
+          padding: 16px; 
+          display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+        }
+        .emp-item-content { display: flex; align-items: center; gap: 12px; width: 100%; }
+        
+        .emp-persona { padding: 24px; }
+        
+        @media(min-width: 768px) {
+          .emp-container { padding: 24px 28px; }
+          .emp-header { margin-bottom: 32px; }
+          .emp-title { font-size: 24px; }
+          .emp-card { padding: 32px; }
+          .emp-card-header { margin-bottom: 24px; }
+          .emp-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+          .emp-item-card { flex-direction: row; align-items: center; justify-content: space-between; padding: 16px 20px; gap: 16px; }
+          .emp-item-content { width: auto; flex: 1; }
+          .emp-persona { padding: 32px; }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="emp-header">
+        <h1 className="emp-title">
           Sobre sua Empresa
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="emp-subtitle">
           Presença digital mapeada, canais identificados e perfil do cliente ideal
         </p>
       </div>
 
       {/* Canais Identificados */}
-      <div
-        className="dl-glass-card"
-        style={{
-          padding: "32px",
-          marginBottom: 24,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)" }}>
+      <div className="dl-glass-card emp-card">
+        <div className="emp-card-header">
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)", flexShrink: 0 }}>
             <IconCheckCircle />
           </div>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
             Canais Identificados ({d.canais_identificados?.length ?? 0})
           </h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+        <div className="emp-grid">
           {d.canais_identificados?.map((c, i) => {
             const st = getStatusStyle(c.status)
             return (
-              <div
-                key={i}
-                style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: 16,
-                  padding: "16px 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  transition: "all 0.2s"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+              <div key={i} className="emp-item-card">
+                <div className="emp-item-content">
                   <div style={{ background: "var(--bg-surface)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,.02)" }}>
                     <IconLink />
                   </div>
@@ -181,22 +193,16 @@ export default function EmpresaPage() {
 
       {/* Canais Ausentes */}
       {d.canais_ausentes && d.canais_ausentes.length > 0 && (
-        <div
-          className="dl-glass-card"
-          style={{
-            padding: "32px",
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", border: "1px solid var(--border-color)" }}>
+        <div className="dl-glass-card emp-card">
+          <div className="emp-card-header">
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", border: "1px solid var(--border-color)", flexShrink: 0 }}>
               <IconSearch />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
               Canais Não Explorados ({d.canais_ausentes.length})
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+          <div className="emp-grid">
             {d.canais_ausentes.map((c, i) => (
               <div
                 key={i}
@@ -226,15 +232,14 @@ export default function EmpresaPage() {
       {/* Persona */}
       {d.persona && (
         <div
-          className="dl-glass-card"
+          className="dl-glass-card emp-persona"
           style={{
             background: "linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(77,148,255,0.02) 100%)",
             border: "1px solid rgba(0,102,255,0.15)",
-            padding: "32px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)" }}>
+          <div className="emp-card-header">
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)", flexShrink: 0 }}>
               <IconUser />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
@@ -246,7 +251,7 @@ export default function EmpresaPage() {
             {d.persona.descricao}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 24 }}>
+          <div className="emp-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))" }}>
             {d.persona.tags && d.persona.tags.length > 0 && (
               <div>
                 <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>

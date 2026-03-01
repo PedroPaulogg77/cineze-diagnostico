@@ -68,27 +68,53 @@ export default function PlanoPage() {
   const altaCount = list.filter(a => a.prioridade === "Alta").length
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="plano-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
         .plano-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
         .plano-tab:hover { opacity: .85; }
+        
+        .plano-container { padding: 16px; }
+        .plano-header { margin-bottom: 24px; }
+        .plano-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .plano-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .plano-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        .plano-card-inner { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+        .plano-card-main { flex: 1; min-width: 0; width: 100%; }
+        .plano-card-top { display: flex; align-items: flex-start; gap: 12px; width: 100%; justify-content: space-between; }
+        .plano-card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; line-height: 1.4; padding-right: 24px; }
+        
+        .plano-card-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        
+        @media (min-width: 768px) {
+          .plano-container { padding: 24px 28px; }
+          .plano-header { margin-bottom: 32px; }
+          .plano-title { font-size: 24px; }
+          .plano-filters { gap: 12px; margin-bottom: 28px; }
+          
+          .plano-card-inner { padding: 20px 24px; flex-direction: row; align-items: flex-start; gap: 16px; }
+          .plano-card-top { justify-content: flex-start; width: auto; gap: 16px; }
+          .plano-card-title { padding-right: 0; }
+          .plano-card-tags { margin-top: 10px; gap: 10px; }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="plano-header">
+        <h1 className="plano-title">
           Plano de Ação
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="plano-subtitle">
           Roadmap personalizado — {list.length} ações em 4 semanas, {altaCount} de alta prioridade
         </p>
       </div>
 
       {/* Semana filter */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
+      <div className="plano-filters">
         <button
           className="plano-tab"
           onClick={() => setSemanaAtiva(null)}
@@ -104,7 +130,6 @@ export default function PlanoPage() {
         </button>
         {semanas.map(s => {
           const cnt = list.filter(a => a.semana === s).length
-          const c = SEMANA_COLOR[s - 1]
           const isActive = semanaAtiva === s
           return (
             <button
@@ -152,24 +177,35 @@ export default function PlanoPage() {
               }}
             >
               {/* Card header */}
-              <div style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16 }}>
-                {/* Number badge */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: `rgba(0, 102, 255, 0.1)`,
-                  border: `1px solid rgba(0, 102, 255, 0.2)`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, fontWeight: 700, color: semColor,
-                  flexShrink: 0,
-                }}>
-                  {acao.numero}
+              <div className="plano-card-inner">
+                {/* Number badge and Chevron top group on mobile */}
+                <div className="plano-card-top">
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12,
+                    background: `rgba(0, 102, 255, 0.1)`,
+                    border: `1px solid rgba(0, 102, 255, 0.2)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 16, fontWeight: 700, color: semColor,
+                    flexShrink: 0,
+                  }}>
+                    {acao.numero}
+                  </div>
+                  {/* Chevron on Mobile only visible here to be on same row as number badge, hidden on desktop if preferred, but we will keep original absolute pos approach or flex row. Best approach: wrap title and tags, let chevron flow. Replacing top structure: */}
+                  <span style={{
+                    color: "var(--text-tertiary)", fontSize: 14, flexShrink: 0, marginTop: 14,
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform .2s ease",
+                    display: "block",
+                  }}>
+                    ▼
+                  </span>
                 </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                    <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{acao.titulo}</p>
+                <div className="plano-card-main">
+                  <div>
+                    <p className="plano-card-title">{acao.titulo}</p>
                   </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div className="plano-card-tags">
                     <span style={{
                       fontSize: 12, fontWeight: 700,
                       color: pr.color, background: pr.bg,
@@ -188,14 +224,8 @@ export default function PlanoPage() {
                   </div>
                 </div>
 
-                {/* Chevron */}
-                <span style={{
-                  color: "var(--text-tertiary)", fontSize: 14, flexShrink: 0, marginTop: 2,
-                  transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform .2s ease",
-                }}>
-                  ▼
-                </span>
+                {/* Chevron Desktop - hidden on mobile via CSS but we handle it inline for now: Wait, earlier we put Chevron in card-top. That's fine for both. It will stack on top right on mobile, and left-align on desktop but wait, desktop we want it right aligned. Let's fix positioning. */}
+                {/* Remove this chevron if used via span in card-top */}
               </div>
 
               {/* Expanded content */}

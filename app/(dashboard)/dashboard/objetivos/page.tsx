@@ -98,27 +98,52 @@ export default function ObjetivosPage() {
   const list = objetivos ?? []
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="obj-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
-        .obj-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+        .obj-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; color: var(--text-secondary); }
         .obj-tab:hover { background: var(--bg-surface-hover) !important; }
+        .obj-tab.active { background: rgba(0,102,255,0.08) !important; border-color: rgba(0,102,255,0.3) !important; color: var(--blue-primary); font-weight: 600; }
+        
+        .obj-container { padding: 16px; }
+        .obj-header { margin-bottom: 24px; }
+        .obj-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .obj-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .obj-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+        
+        .obj-banner { padding: 24px; border-bottom: 1px solid rgba(0,102,255,0.15); background: linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(77,148,255,0.02) 100%); }
+        .obj-banner-content { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+        
+        .obj-breakdown { padding: 24px; }
+        .obj-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        
+        @media (min-width: 768px) {
+          .obj-container { padding: 24px 28px; }
+          .obj-header { margin-bottom: 32px; }
+          .obj-title { font-size: 24px; }
+          .obj-legend { gap: 12px; margin-bottom: 32px; }
+          .obj-banner { padding: 32px; }
+          .obj-banner-content { flex-direction: row; gap: 16px; }
+          .obj-breakdown { padding: 32px; }
+          .obj-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="obj-header">
+        <h1 className="obj-title">
           Objetivos SMART
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="obj-subtitle">
           Metas estruturadas com critérios mensuráveis para guiar seu crescimento
         </p>
       </div>
 
       {/* SMART Legend */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 32 }}>
+      <div className="obj-legend">
         {SMART_ITEMS.map(s => (
           <div
             key={s.key}
@@ -141,17 +166,15 @@ export default function ObjetivosPage() {
           {list.map((obj, i) => (
             <button
               key={i}
-              className="obj-tab"
+              className={`obj-tab ${expanded === i ? "active" : ""}`}
               onClick={() => setExpanded(i)}
               style={{
-                background: expanded === i ? "rgba(0,102,255,0.08)" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${expanded === i ? "rgba(0,102,255,0.3)" : "var(--border-color)"}`,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid var(--border-color)",
                 borderRadius: 12,
                 padding: "10px 20px",
-                color: expanded === i ? "var(--blue-primary)" : "var(--text-secondary)",
                 fontSize: 14,
-                fontWeight: expanded === i ? 600 : 500,
-                cursor: "pointer",
+                fontWeight: 500,
               }}
             >
               Objetivo {i + 1}
@@ -168,12 +191,8 @@ export default function ObjetivosPage() {
           style={{ overflow: "hidden" }}
         >
           {/* Title banner */}
-          <div style={{
-            background: "linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(77,148,255,0.02) 100%)",
-            borderBottom: "1px solid rgba(0,102,255,0.15)",
-            padding: "32px",
-          }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+          <div className="obj-banner">
+            <div className="obj-banner-content">
               <div style={{
                 width: 48, height: 48, borderRadius: 12,
                 background: "rgba(0,102,255,0.1)",
@@ -188,14 +207,14 @@ export default function ObjetivosPage() {
                 <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
                   {obj.titulo}
                 </p>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>{obj.meta}</p>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>{obj.meta}</p>
               </div>
             </div>
           </div>
 
           {/* SMART breakdown */}
-          <div style={{ padding: "32px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+          <div className="obj-breakdown">
+            <div className="obj-grid">
               {SMART_ITEMS.map(s => {
                 const text = obj[s.key]
                 if (!text) return null

@@ -99,48 +99,70 @@ export default function MaturidadePage() {
   const avgColor = scoreColor(avg)
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="mat-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
         .mat-bar { transition: width 1s cubic-bezier(.4,0,.2,1); }
+        
+        .mat-container { padding: 16px; }
+        .mat-header { margin-bottom: 24px; }
+        .mat-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .mat-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .mat-summary { display: flex; flex-direction: column; gap: 24px; padding: 24px; margin-bottom: 24px; }
+        .mat-summary-score { display: flex; alignItems: center; gap: 16px; width: 100%; }
+        .mat-summary-stats { display: flex; gap: 16px; flex-wrap: wrap; width: 100%; justify-content: space-between; }
+        .mat-stat-item { text-align: center; flex: 1; min-width: 80px; }
+        
+        .mat-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        
+        @media (min-width: 768px) {
+          .mat-container { padding: 24px 28px; }
+          .mat-header { margin-bottom: 32px; }
+          .mat-title { font-size: 24px; }
+          .mat-summary { flex-direction: row; align-items: center; gap: 32px; padding: 32px; margin-bottom: 32px; }
+          .mat-summary-score { flex: 1; min-width: 200px; gap: 20px; }
+          .mat-summary-stats { flex: 2; gap: 20px; justify-content: flex-start; }
+          .mat-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="mat-header">
+        <h1 className="mat-title">
           Maturidade Digital
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="mat-subtitle">
           Nível de presença e performance em cada canal digital
         </p>
       </div>
 
       {/* Summary bar */}
-      <div className="dl-glass-card" style={{ display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap", padding: 32, marginBottom: 32 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, flex: 1, minWidth: 200 }}>
+      <div className="dl-glass-card mat-summary">
+        <div className="mat-summary-score">
           <div style={{
             width: 64, height: 64, borderRadius: "50%",
             background: `${avgColor}1A`,
-            display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
           }}>
             <span style={{ fontSize: 22, fontWeight: 800, color: avgColor }}>{avg}</span>
           </div>
           <div>
             <p style={{ fontSize: 13, color: "var(--text-tertiary)", fontWeight: 500, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Score médio geral</p>
-            <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
+            <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.5px", margin: 0 }}>
               {avg < 4 ? "Crítico" : avg < 6 ? "Básico" : avg < 8 ? "Intermediário" : "Avançado"}
             </p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <div className="mat-summary-stats">
           {Object.entries(STATUS_COLOR).map(([status, color]) => {
             const count = canais?.filter(c => c.status === status).length ?? 0
             return (
-              <div key={status} style={{ textAlign: "center" }}>
-                <p style={{ fontSize: 22, fontWeight: 700, color }}>{count}</p>
-                <p style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{status}</p>
+              <div key={status} className="mat-stat-item">
+                <p style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px", color }}>{count}</p>
+                <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>{status}</p>
               </div>
             )
           })}
@@ -148,7 +170,7 @@ export default function MaturidadePage() {
       </div>
 
       {/* Canais grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 16 }}>
+      <div className="mat-grid">
         {canais?.map((canal, idx) => {
           const color = scoreColor(canal.score ?? 0)
           const statusColor = STATUS_COLOR[canal.status] ?? "#8B9DB5"
@@ -165,10 +187,10 @@ export default function MaturidadePage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{
-                    width: 48, height: 48, borderRadius: "50%",
+                    width: 44, height: 44, borderRadius: "50%",
                     background: statusBg,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 18, fontWeight: 700, color: statusColor,
+                    fontSize: 18, fontWeight: 700, color: statusColor, flexShrink: 0,
                     border: `1px solid ${statusBg}`
                   }}>
                     {getInitial(canal.canal)}
@@ -191,7 +213,7 @@ export default function MaturidadePage() {
                     </span>
                   </div>
                 </div>
-                <span style={{ fontSize: 28, fontWeight: 700, color }}>{canal.score ?? 0}</span>
+                <span style={{ fontSize: 24, fontWeight: 700, color }}>{canal.score ?? 0}</span>
               </div>
 
               {/* Score bar */}
@@ -233,7 +255,7 @@ export default function MaturidadePage() {
                         }}>
                           <div style={{ width: 6, height: 6, borderRadius: 1, background: "var(--blue)" }} />
                         </div>
-                        <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{item}</span>
+                        <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{item}</span>
                       </div>
                     ))}
                   </div>

@@ -132,31 +132,43 @@ export default function MercadoPage() {
   ]
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="mer-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+        
+        .mer-container { padding: 16px; }
+        .mer-header { margin-bottom: 24px; }
+        .mer-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .mer-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .mer-panorama { padding: 24px; margin-bottom: 24px; }
+        .mer-metrics-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+        .mer-2col-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        
+        @media (min-width: 768px) {
+          .mer-container { padding: 24px 28px; }
+          .mer-header { margin-bottom: 32px; }
+          .mer-title { font-size: 24px; }
+          .mer-panorama { padding: 32px; }
+          .mer-metrics-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 24px; }
+          .mer-2col-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="mer-header">
+        <h1 className="mer-title">
           Análise de Mercado
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="mer-subtitle">
           Panorama competitivo e oportunidades de crescimento no seu segmento
         </p>
       </div>
 
       {/* Panorama card */}
-      <div
-        className="dl-glass-card"
-        style={{
-          padding: "32px",
-          marginBottom: 24,
-        }}
-      >
+      <div className="dl-glass-card mer-panorama">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--bg-main)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
             <IconGlobe />
@@ -167,7 +179,7 @@ export default function MercadoPage() {
       </div>
 
       {/* Metrics row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 24, marginBottom: 24 }}>
+      <div className="mer-metrics-grid">
         {metrics.map(m => (
           <div
             key={m.label}
@@ -191,14 +203,14 @@ export default function MercadoPage() {
       </div>
 
       {/* Two-column row: Desafios + Oportunidade */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="mer-2col-grid">
         {/* Desafios */}
         <div
           className="dl-glass-card"
           style={{ padding: "32px" }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(239, 68, 68, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--danger)" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(239, 68, 68, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--danger)", flexShrink: 0 }}>
               <IconAlert />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Desafios do Segmento</h2>
@@ -232,7 +244,7 @@ export default function MercadoPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)", flexShrink: 0 }}>
               <IconArrowUp />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Maior Oportunidade</h2>

@@ -120,37 +120,54 @@ export default function ComunicacaoPage() {
   const leveCount = d.problemas?.filter(p => p.nivel === "leve").length ?? 0
 
   return (
-    <div style={{ padding: "24px 28px" }}>
+    <div className="com-container">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+        
+        .com-container { padding: 16px; }
+        .com-header { margin-bottom: 24px; }
+        .com-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+        .com-subtitle { font-size: 14px; color: var(--text-secondary); }
+        
+        .com-score-card { padding: 24px; margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+        .com-circle-wrapper { display: flex; flex-direction: column; align-items: center; gap: 12px; flex-shrink: 0; }
+        .com-analysis { flex: 1; min-width: 0; width: 100%; }
+        
+        .com-brand-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+        .com-brand-card { padding: 24px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border-color); }
+        
+        .com-problems-card { padding: 24px; }
+        .com-problems-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .com-problems-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .com-problem-item { background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; }
+        
+        @media (min-width: 768px) {
+          .com-container { padding: 24px 28px; }
+          .com-header { margin-bottom: 32px; }
+          .com-title { font-size: 24px; }
+          .com-score-card { flex-direction: row; align-items: flex-start; gap: 40px; padding: 32px; }
+          .com-brand-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+          .com-problems-card { padding: 32px; }
+          .com-problems-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+        }
       ` }} />
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      <div className="com-header">
+        <h1 className="com-title">
           Auditoria de Comunicação
         </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+        <p className="com-subtitle">
           Análise da identidade, mensagem e eficácia da sua comunicação com o mercado
         </p>
       </div>
 
       {/* Score + Análise Geral */}
-      <div
-        className="dl-glass-card"
-        style={{
-          padding: "32px",
-          marginBottom: 24,
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 40,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="dl-glass-card com-score-card">
         {/* Circle */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <div className="com-circle-wrapper">
           <svg width={104} height={104} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={52} cy={52} r={42} fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth={8} />
             <circle
@@ -163,10 +180,10 @@ export default function ComunicacaoPage() {
             />
           </svg>
           <div style={{ marginTop: -80, marginBottom: 12, textAlign: "center", position: "relative", zIndex: 1 }}>
-            <p style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{score}</p>
-            <p style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 2 }}>/ 100</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1, margin: 0 }}>{score}</p>
+            <p style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 2, margin: 0 }}>/ 100</p>
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 36 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 36, flexWrap: "wrap", justifyContent: "center" }}>
             {criticalCount > 0 && (
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)", background: "rgba(239, 68, 68, 0.15)", padding: "2px 8px", borderRadius: 20 }}>
                 {criticalCount} crítico{criticalCount > 1 ? "s" : ""}
@@ -186,7 +203,7 @@ export default function ComunicacaoPage() {
         </div>
 
         {/* Análise */}
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div className="com-analysis">
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
             Análise Geral
           </p>
@@ -195,39 +212,35 @@ export default function ComunicacaoPage() {
       </div>
 
       {/* Brand cards row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 24, marginBottom: 24 }}>
+      <div className="com-brand-grid">
         {brandItems.map(item => item.text && (
           <div
             key={item.label}
-            className="dl-glass-card"
-            style={{ padding: "24px" }}
+            className="dl-glass-card com-brand-card"
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ color: "var(--text-secondary)" }}>{item.icon}</span>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
                 {item.label}
               </p>
             </div>
-            <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.7 }}>{item.text}</p>
+            <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.7, margin: 0 }}>{item.text}</p>
           </div>
         ))}
       </div>
 
       {/* Problemas */}
       {d.problemas && d.problemas.length > 0 && (
-        <div
-          className="dl-glass-card"
-          style={{ padding: "32px" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", border: "1px solid var(--border-color)" }}>
+        <div className="dl-glass-card com-problems-card">
+          <div className="com-problems-header">
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", border: "1px solid var(--border-color)", flexShrink: 0 }}>
               <IconSearch />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
               Problemas Identificados
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+          <div className="com-problems-grid">
             {d.problemas
               .sort((a, b) => {
                 const order: Record<NivelProblema, number> = { critico: 0, moderado: 1, leve: 2 }
@@ -238,16 +251,11 @@ export default function ComunicacaoPage() {
                 return (
                   <div
                     key={i}
-                    style={{
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 16,
-                      padding: "20px",
-                    }}
+                    className="com-problem-item"
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, background: st.bg, color: st.color, flexShrink: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, background: st.bg, color: st.color, flexShrink: 0, marginTop: 2 }}>
                           <IconSearch />
                         </div>
                         <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px", lineHeight: 1.4 }}>{p.problema}</p>
