@@ -49,7 +49,7 @@ function Skeleton() {
     <div style={{ padding: "24px 28px" }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes obj-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .obj-sk { animation: obj-pulse 1.6s ease-in-out infinite; background: #1A3050; }
+        .obj-sk { animation: obj-pulse 1.6s ease-in-out infinite; background: var(--border-color); }
       ` }} />
 
       <div className="obj-sk" style={{ height: 28, width: 180, borderRadius: 8, marginBottom: 8 }} />
@@ -60,7 +60,7 @@ function Skeleton() {
         {[1, 2, 3, 4, 5].map(i => (
           <div key={i} className="obj-sk" style={{
             height: 72, borderRadius: 16,
-            borderLeft: "4px solid #1E3A5A",
+            borderLeft: "4px solid var(--border-color)",
           }} />
         ))}
       </div>
@@ -116,14 +116,14 @@ export default function ObjetivosPage() {
         @media (min-width: 768px) { .obj-page { padding: 24px 28px; } }
 
         .obj-card {
-          background: #0D1F35;
-          border: 1px solid #1A3050;
+          background: var(--bg-surface);
+          border: 1px solid var(--border-color);
           border-left: 4px solid #0066FF;
           border-radius: 16px;
           overflow: hidden;
           transition: background 200ms;
         }
-        .obj-card.is-open { background: #0A1628; }
+        .obj-card.is-open { background: var(--bg-surface-hover); }
 
         .obj-card-header {
           display: flex;
@@ -134,7 +134,7 @@ export default function ObjetivosPage() {
           cursor: pointer;
           user-select: none;
         }
-        .obj-card-header:hover { background: #0A1628; }
+        .obj-card-header:hover { background: var(--bg-surface-hover); }
 
         .obj-expand {
           max-height: 0;
@@ -142,15 +142,18 @@ export default function ObjetivosPage() {
           transition: max-height 300ms ease;
         }
         .obj-expand.is-open { max-height: 2000px; }
+
+        .obj-separator { height: 1px; background: var(--border-color); margin: 0 24px; }
+        .obj-smart-sep { height: 1px; background: var(--border-color); }
       ` }} />
 
       <div className="obj-page">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#FFFFFF", margin: "0 0 6px" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
           Objetivos
         </h1>
-        <p style={{ fontSize: 15, color: "#8B9DB5", margin: "0 0 12px" }}>
+        <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: "0 0 12px" }}>
           5 objetivos concretos definidos com base no seu diagnóstico.
         </p>
         <span style={{
@@ -186,12 +189,12 @@ export default function ObjetivosPage() {
                       {numero}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 16, fontWeight: 600, color: "#FFFFFF", margin: 0, lineHeight: 1.4 }}>
+                      <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.4 }}>
                         {obj.titulo}
                       </p>
                       {metaText && (
                         <p style={{
-                          fontSize: 14, color: "#8B9DB5", margin: "2px 0 0", lineHeight: 1.4,
+                          fontSize: 14, color: "var(--text-secondary)", margin: "2px 0 0", lineHeight: 1.4,
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         }}>
                           {metaText}
@@ -202,16 +205,16 @@ export default function ObjetivosPage() {
 
                   {/* Right: label + chevron */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: isOpen ? "#8B9DB5" : "#0066FF" }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: isOpen ? "var(--text-secondary)" : "#0066FF" }}>
                       {isOpen ? "Fechar" : "Ver detalhes"}
                     </span>
-                    <ChevronIcon up={isOpen} color={isOpen ? "#8B9DB5" : "#0066FF"} />
+                    <ChevronIcon up={isOpen} color={isOpen ? "var(--text-tertiary)" : "#0066FF"} />
                   </div>
                 </div>
 
                 {/* Expandable content */}
                 <div className={`obj-expand${isOpen ? " is-open" : ""}`}>
-                  <div style={{ height: 1, background: "#1A3050", margin: "0 24px" }} />
+                  <div className="obj-separator" />
 
                   <div style={{ padding: "4px 24px 24px" }}>
                     {SMART.map((s, si) => {
@@ -238,15 +241,13 @@ export default function ObjetivosPage() {
                               }}>
                                 {s.label}
                               </p>
-                              <p style={{ fontSize: 14, color: "#FFFFFF", lineHeight: 1.6, margin: 0 }}>
+                              <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: 0 }}>
                                 {text || "—"}
                               </p>
                             </div>
                           </div>
 
-                          {si < SMART.length - 1 && (
-                            <div style={{ height: 1, background: "#1A3050" }} />
-                          )}
+                          {si < SMART.length - 1 && <div className="obj-smart-sep" />}
                         </div>
                       )
                     })}
