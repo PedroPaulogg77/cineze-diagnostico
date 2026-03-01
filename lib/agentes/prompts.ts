@@ -141,8 +141,25 @@ Retorne APENAS JSON com esta estrutura exata:
     persona: { descricao, tags: [], interesses: [], onde_encontrar: [] }
   },
   comunicacao: { score, analise_geral, proposta_de_valor, tom_de_voz, cta, problemas: [{ nivel, problema, solucao }] },
-  objetivos_smart: [{ titulo, meta, especifico, mensuravel, atingivel, relevante, temporal }],
+  objetivos_smart: [
+    {
+      numero: <1-5>,
+      titulo: "<título curto e direto — máx 8 palavras>",
+      meta_resumida: "<1 frase descrevendo o resultado esperado>",
+      especifico: "<o que exatamente precisa ser feito — 2 frases>",
+      mensuravel: "<como medir o progresso — métrica + ferramenta>",
+      atingivel: "<por que é possível dado o porte e recursos atuais>",
+      relevante: "<por que este objetivo é prioridade agora para este negócio>",
+      temporal: "<prazo realista com marco intermediário — ex: 30 dias para X, 90 dias para Y>"
+    }
+  ],
   plano_acao: [{ numero, titulo, prioridade, semana, meta, por_que_agora, passos: [] }],
   metricas: [{ nome, baseline, meta, como_medir, frequencia }]
 }
-Máximo 6 ações no plano. Linguagem direta, sem jargão.`
+Máximo 6 ações no plano. Linguagem direta, sem jargão.
+REGRAS DOS OBJETIVOS SMART:
+- Gerar SEMPRE exatamente 5 objetivos
+- Cada objetivo deve ser específico para o negócio analisado (mencionar segmento, cidade, situação real)
+- Ordenar por impacto: objetivo 1 é o mais urgente
+- Objetivos distintos entre si — cobrir dimensões diferentes (captação, conversão, posicionamento, retenção, operação)
+- Nunca gerar 5 objetivos sobre o mesmo tema`

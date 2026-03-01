@@ -3,61 +3,67 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
-import type { ObjetivoSMART } from "@/types"
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Objetivo {
+  numero?: number
+  titulo: string
+  meta_resumida?: string
+  meta?: string           // campo legado
+  especifico: string
+  mensuravel: string
+  atingivel: string
+  relevante: string
+  temporal: string
+}
+
+// ─── SMART Config ─────────────────────────────────────────────────────────────
+
+const SMART = [
+  { key: "especifico" as const, letra: "E", label: "Específico", color: "#0066FF", bg: "rgba(0,102,255,0.08)" },
+  { key: "mensuravel" as const, letra: "M", label: "Mensurável", color: "#06B7D8", bg: "rgba(6,183,216,0.08)" },
+  { key: "atingivel"  as const, letra: "A", label: "Atingível",  color: "#22C55E", bg: "rgba(34,197,94,0.08)"  },
+  { key: "relevante"  as const, letra: "R", label: "Relevante",  color: "#EAB308", bg: "rgba(234,179,8,0.08)"  },
+  { key: "temporal"   as const, letra: "T", label: "Temporal",   color: "#F97316", bg: "rgba(249,115,22,0.08)" },
+]
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-const IconTarget = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
-  </svg>
-)
-const IconBarChart = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-  </svg>
-)
-const IconTrendingUp = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
-  </svg>
-)
-const IconStar = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-)
-const IconClock = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-  </svg>
-)
-
-// ─── SMART Items ──────────────────────────────────────────────────────────────
-
-const SMART_ITEMS = [
-  { key: "especifico" as const, label: "Específico", icon: <IconTarget />, color: "var(--blue-dark)" },
-  { key: "mensuravel" as const, label: "Mensurável", icon: <IconBarChart />, color: "var(--blue-primary)" },
-  { key: "atingivel" as const, label: "Atingível", icon: <IconTrendingUp />, color: "var(--blue-light)" },
-  { key: "relevante" as const, label: "Relevante", icon: <IconStar />, color: "var(--text-secondary)" },
-  { key: "temporal" as const, label: "Temporal", icon: <IconClock />, color: "var(--blue-primary)" },
-]
+function ChevronIcon({ up, color }: { up: boolean; color: string }) {
+  return (
+    <svg
+      width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0, transition: "transform 300ms ease", transform: up ? "rotate(180deg)" : "rotate(0deg)" }}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px" }}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes obj-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .obj-sk { animation: obj-pulse 1.6s ease-in-out infinite; background: #1A3050; }
       ` }} />
-      <div className="rx-pulse" style={{ height: 28, width: 260, borderRadius: 8, background: "var(--border-color)", marginBottom: 8 }} />
-      <div className="rx-pulse" style={{ height: 16, width: 340, borderRadius: 6, background: "var(--border-color)", marginBottom: 32 }} />
-      {[1, 2, 3].map(i => (
-        <div key={i} className="rx-pulse" style={{ height: 180, borderRadius: 16, background: "var(--border-color)", marginBottom: 16 }} />
-      ))}
+
+      <div className="obj-sk" style={{ height: 28, width: 180, borderRadius: 8, marginBottom: 8 }} />
+      <div className="obj-sk" style={{ height: 16, width: 320, borderRadius: 6, marginBottom: 10 }} />
+      <div className="obj-sk" style={{ height: 30, width: 190, borderRadius: 9999, marginBottom: 28 }} />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="obj-sk" style={{
+            height: 72, borderRadius: 16,
+            borderLeft: "4px solid #1E3A5A",
+          }} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -66,9 +72,9 @@ function Skeleton() {
 
 export default function ObjetivosPage() {
   const router = useRouter()
-  const [objetivos, setObjetivos] = useState<ObjetivoSMART[] | null>(null)
+  const [objetivos, setObjetivos] = useState<Objetivo[] | null>(null)
   const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<number>(0)
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
@@ -87,7 +93,7 @@ export default function ObjetivosPage() {
 
       if (!row) { router.replace("/onboarding"); return }
 
-      setObjetivos(row.objetivos_smart as unknown as ObjetivoSMART[])
+      setObjetivos(row.objetivos_smart as unknown as Objetivo[])
       setLoading(false)
     }
     load()
@@ -97,144 +103,160 @@ export default function ObjetivosPage() {
 
   const list = objetivos ?? []
 
+  function toggle(i: number) {
+    setOpenIdx(prev => (prev === i ? null : i))
+  }
+
   return (
-    <div className="obj-container">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
-        .obj-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; color: var(--text-secondary); }
-        .obj-tab:hover { background: var(--bg-surface-hover) !important; }
-        .obj-tab.active { background: rgba(0,102,255,0.08) !important; border-color: rgba(0,102,255,0.3) !important; color: var(--blue-primary); font-weight: 600; }
-        
-        .obj-container { padding: 16px; }
-        .obj-header { margin-bottom: 24px; }
-        .obj-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-        .obj-subtitle { font-size: 14px; color: var(--text-secondary); }
-        
-        .obj-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-        
-        .obj-banner { padding: 24px; border-bottom: 1px solid rgba(0,102,255,0.15); background: linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(77,148,255,0.02) 100%); }
-        .obj-banner-content { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
-        
-        .obj-breakdown { padding: 24px; }
-        .obj-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        
-        @media (min-width: 768px) {
-          .obj-container { padding: 24px 28px; }
-          .obj-header { margin-bottom: 32px; }
-          .obj-title { font-size: 24px; }
-          .obj-legend { gap: 12px; margin-bottom: 32px; }
-          .obj-banner { padding: 32px; }
-          .obj-banner-content { flex-direction: row; gap: 16px; }
-          .obj-breakdown { padding: 32px; }
-          .obj-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes obj-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        .obj-page { padding: 16px; }
+        @media (min-width: 768px) { .obj-page { padding: 24px 28px; } }
+
+        .obj-card {
+          background: #0D1F35;
+          border: 1px solid #1A3050;
+          border-left: 4px solid #0066FF;
+          border-radius: 16px;
+          overflow: hidden;
+          transition: background 200ms;
         }
+        .obj-card.is-open { background: #0A1628; }
+
+        .obj-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 20px 24px;
+          cursor: pointer;
+          user-select: none;
+        }
+        .obj-card-header:hover { background: #0A1628; }
+
+        .obj-expand {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 300ms ease;
+        }
+        .obj-expand.is-open { max-height: 2000px; }
       ` }} />
 
-      {/* Layout Header manages the titles now */}
+      <div className="obj-page">
 
-      {/* SMART Legend */}
-      <div className="obj-legend">
-        {SMART_ITEMS.map(s => (
-          <div
-            key={s.key}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: `rgba(0,102,255,0.06)`,
-              border: `1px solid rgba(0,102,255,0.15)`,
-              borderRadius: 20, padding: "6px 14px",
-            }}
-          >
-            <span style={{ color: s.color, display: "flex", alignItems: "center" }}>{s.icon}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: s.color }}>{s.label}</span>
-          </div>
-        ))}
-      </div>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#FFFFFF", margin: "0 0 6px" }}>
+          Objetivos
+        </h1>
+        <p style={{ fontSize: 15, color: "#8B9DB5", margin: "0 0 12px" }}>
+          5 objetivos concretos definidos com base no seu diagnóstico.
+        </p>
+        <span style={{
+          display: "inline-flex", alignItems: "center",
+          background: "rgba(0,102,255,0.08)", border: "1px solid #0066FF",
+          color: "#0066FF", fontSize: 13, fontWeight: 600,
+          padding: "6px 16px", borderRadius: 9999, marginBottom: 24,
+        }}>
+          {list.length} objetivo{list.length !== 1 ? "s" : ""} identificado{list.length !== 1 ? "s" : ""}
+        </span>
 
-      {/* Tabs */}
-      {list.length > 1 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          {list.map((obj, i) => (
-            <button
-              key={i}
-              className={`obj-tab ${expanded === i ? "active" : ""}`}
-              onClick={() => setExpanded(i)}
-              style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid var(--border-color)",
-                borderRadius: 12,
-                padding: "10px 20px",
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
-              Objetivo {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
+        {/* ── Cards ──────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {list.map((obj, i) => {
+            const isOpen = openIdx === i
+            const numero = obj.numero ?? i + 1
+            const metaText = obj.meta_resumida ?? obj.meta ?? ""
 
-      {/* Active objetivo */}
-      {list.map((obj, i) => i !== expanded ? null : (
-        <div
-          key={i}
-          className="dl-glass-card"
-          style={{ overflow: "hidden" }}
-        >
-          {/* Title banner */}
-          <div className="obj-banner">
-            <div className="obj-banner-content">
-              <div style={{
-                width: 48, height: 48, borderRadius: 12,
-                background: "rgba(0,102,255,0.1)",
-                border: "1px solid rgba(0,102,255,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, fontWeight: 700, color: "var(--blue-primary)",
-                flexShrink: 0,
-              }}>
-                {i + 1}
-              </div>
-              <div>
-                <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-                  {obj.titulo}
-                </p>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>{obj.meta}</p>
-              </div>
-            </div>
-          </div>
+            return (
+              <div key={i} className={`obj-card${isOpen ? " is-open" : ""}`}>
 
-          {/* SMART breakdown */}
-          <div className="obj-breakdown">
-            <div className="obj-grid">
-              {SMART_ITEMS.map(s => {
-                const text = obj[s.key]
-                if (!text) return null
-                return (
-                  <div
-                    key={s.key}
-                    style={{
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid var(--border-color)",
-                      borderLeft: `3px solid ${s.color}`,
-                      borderRadius: 16,
-                      padding: "20px",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <span style={{ color: s.color, display: "flex", alignItems: "center", padding: "6px", borderRadius: "8px", background: `rgba(0,102,255,0.08)` }}>{s.icon}</span>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
-                        {s.label}
-                      </p>
+                {/* Card header */}
+                <div className="obj-card-header" onClick={() => toggle(i)}>
+
+                  {/* Left: number badge + text */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%",
+                      background: "#0066FF", flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, fontWeight: 700, color: "#FFFFFF",
+                    }}>
+                      {numero}
                     </div>
-                    <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>{text}</p>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 16, fontWeight: 600, color: "#FFFFFF", margin: 0, lineHeight: 1.4 }}>
+                        {obj.titulo}
+                      </p>
+                      {metaText && (
+                        <p style={{
+                          fontSize: 14, color: "#8B9DB5", margin: "2px 0 0", lineHeight: 1.4,
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {metaText}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                )
-              })}
-            </div>
-          </div>
+
+                  {/* Right: label + chevron */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: isOpen ? "#8B9DB5" : "#0066FF" }}>
+                      {isOpen ? "Fechar" : "Ver detalhes"}
+                    </span>
+                    <ChevronIcon up={isOpen} color={isOpen ? "#8B9DB5" : "#0066FF"} />
+                  </div>
+                </div>
+
+                {/* Expandable content */}
+                <div className={`obj-expand${isOpen ? " is-open" : ""}`}>
+                  <div style={{ height: 1, background: "#1A3050", margin: "0 24px" }} />
+
+                  <div style={{ padding: "4px 24px 24px" }}>
+                    {SMART.map((s, si) => {
+                      const text = obj[s.key]
+                      return (
+                        <div key={s.key}>
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "16px 0" }}>
+                            {/* Letter badge */}
+                            <div style={{
+                              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                              background: s.bg,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 14, fontWeight: 700, color: s.color,
+                            }}>
+                              {s.letra}
+                            </div>
+
+                            {/* Label + text */}
+                            <div style={{ flex: 1 }}>
+                              <p style={{
+                                fontSize: 11, fontWeight: 700, color: s.color,
+                                textTransform: "uppercase", letterSpacing: "0.08em",
+                                margin: "0 0 4px",
+                              }}>
+                                {s.label}
+                              </p>
+                              <p style={{ fontSize: 14, color: "#FFFFFF", lineHeight: 1.6, margin: 0 }}>
+                                {text || "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {si < SMART.length - 1 && (
+                            <div style={{ height: 1, background: "#1A3050" }} />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-      ))}
-    </div>
+      </div>
+    </>
   )
 }
