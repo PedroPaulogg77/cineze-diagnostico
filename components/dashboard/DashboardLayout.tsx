@@ -236,7 +236,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         }
         /* Mesh Gradient Background */
         .dl-app { 
-          display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative;
+          display: flex; position: fixed; inset: 0; overflow: hidden;
         }
         .dl-app::before {
           content: "";
@@ -264,7 +264,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           position: fixed;
           top: 0;
           left: 0;
-          height: 100vh;
+          height: 100%;
           width: var(--sidebar-width); 
           background-color: var(--bg-surface); 
           backdrop-filter: blur(20px);
@@ -273,10 +273,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           display: flex; flex-direction: column; flex-shrink: 0; 
           z-index: 300; 
           transform: translateX(-100%); 
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 10px 0 25px rgba(0,0,0,0.5);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+          box-shadow: none;
         }
-        .dl-sidebar.open { transform: translateX(0); }
+        .dl-sidebar.open { transform: translateX(0); box-shadow: 10px 0 25px rgba(0,0,0,0.4); }
         .dl-sidebar-header { height: var(--header-height); display: flex; align-items: center; padding: 0 24px; }
         .dl-logo { font-weight: 700; font-size: 22px; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
         .dl-logo-dot { color: var(--blue-primary); }
@@ -284,7 +284,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-sidebar-content::-webkit-scrollbar { width: 4px; }
         .dl-sidebar-content::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
         .dl-sidebar-group { margin-bottom: 24px; }
-        .dl-sidebar-label { color: var(--text-tertiary); font-size: 11px; font-weight: 700; margin-bottom: 12px; padding-left: 12px; text-transform: uppercase; letter-spacing: 0.1em;}
+        .dl-sidebar-label { color: var(--text-tertiary); font-size: 12px; font-weight: 700; margin-bottom: 16px; padding-left: 12px; text-transform: uppercase; letter-spacing: 0.1em;}
         .dl-menu { list-style: none; padding: 0; margin: 0; }
         .dl-menu-item { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; color: var(--text-secondary); cursor: pointer; margin-bottom: 4px; text-decoration: none; transition: all 0.2s ease; font-weight: 500; border: 1px solid transparent; }
         .dl-menu-item:active { transform: scale(0.98); }
@@ -293,7 +293,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-menu-item.active { color: var(--blue-primary); background-color: var(--blue-transparent); font-weight: 600; border-color: rgba(0,102,255,0.2); box-shadow: inset 0 0 12px rgba(0,102,255,0.05); }
         .dl-menu-item.active .dl-menu-icon { color: var(--blue-primary); opacity: 1; }
         .dl-menu-icon { color: var(--text-secondary); opacity: 0.8; transition: all 0.2s ease; }
-        .dl-menu-text { font-size: 14px; }
+        .dl-menu-text { font-size: 15px; }
         .dl-sidebar-footer { padding: 16px; border-top: 1px solid var(--border-color); }
         
         /* Mobile Theme Switcher */
@@ -315,7 +315,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 90;
         }
         .dl-header-left { display: flex; align-items: center; gap: 16px; flex: 1; }
-        .dl-mobile-btn { display: flex; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 8px; border-radius: 8px; margin-left: -8px;}
+        .dl-mobile-btn { display: flex; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 12px; border-radius: 8px; margin-left: -12px;}
         .dl-mobile-btn:active { background: var(--bg-surface-hover); }
         
         /* Hidden on Mobile by default */
@@ -325,13 +325,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-header-right { display: flex; align-items: center; gap: 12px; }
         .dl-profile { display: flex; align-items: center; gap: 0; cursor: pointer; padding: 2px; border-radius: 12px; position: relative; background: transparent; border: none; transition: all 0.2s; }
         .dl-avatar { width: 34px; height: 34px; border-radius: 10px; background: var(--blue-transparent); border: 1px solid rgba(0,102,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--blue-primary); }
-        .dl-avatar-initials { font-size: 12px; font-weight: 700; }
+        .dl-avatar-initials { font-size: 13px; font-weight: 700; }
         
         /* Main Content Base (Mobile) */
         .dl-main-content { flex: 1; overflow-y: auto; position: relative; }
         .dl-content-header { padding: 24px 16px 16px; }
         .dl-breadcrumb { display: none; }
-        .dl-page-title { margin: 0; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; line-height: 1.2; }
+        .dl-page-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; line-height: 1.2; }
         
         /* Glass Card Utilities - Mobile Base */
         .dl-glass-card {
@@ -343,7 +343,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
            box-shadow: 0 4px 24px -8px rgba(0,0,0,0.1);
         }
         .dl-content-area { padding: 0 16px 32px; margin-top: 12px; }
-        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .dl-overlay.active { display: block; opacity: 1; pointer-events: auto; }
         
         .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
