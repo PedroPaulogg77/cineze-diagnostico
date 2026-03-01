@@ -84,7 +84,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/dashboard/objetivos", label: "Objetivos", icon: IconObjetivos },
       { href: "/dashboard/plano", label: "Plano de ação", icon: IconPlano },
-      { href: "/dashboard/metricas", label: "Métricas", icon: IconMetricas },
     ],
   },
 ]
