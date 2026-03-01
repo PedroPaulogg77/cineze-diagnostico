@@ -103,15 +103,7 @@ export default function PlanoPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="plano-header">
-        <h1 className="plano-title">
-          Plano de Ação
-        </h1>
-        <p className="plano-subtitle">
-          Roadmap personalizado — {list.length} ações em 4 semanas, {altaCount} de alta prioridade
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Semana filter */}
       <div className="plano-filters">

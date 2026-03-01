@@ -157,15 +157,7 @@ export default function MercadoPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="mer-header">
-        <h1 className="mer-title">
-          Análise de Mercado
-        </h1>
-        <p className="mer-subtitle">
-          Panorama competitivo e oportunidades de crescimento no seu segmento
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Panorama card */}
       <div className="dl-glass-card mer-panorama">

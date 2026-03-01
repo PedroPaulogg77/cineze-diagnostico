@@ -154,15 +154,7 @@ export default function ComunicacaoPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="com-header">
-        <h1 className="com-title">
-          Auditoria de Comunicação
-        </h1>
-        <p className="com-subtitle">
-          Análise da identidade, mensagem e eficácia da sua comunicação com o mercado
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Score + Análise Geral */}
       <div className="dl-glass-card com-score-card">

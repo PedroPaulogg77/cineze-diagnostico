@@ -390,10 +390,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           .dl-business-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
           .dl-chevron { color: var(--text-tertiary); }
           
-          .dl-content-header { padding: 48px 40px 24px; }
+          .dl-content-header { padding: 48px 40px 24px; display: flex; }
           .dl-content-area { padding: 0 40px 40px; margin-top: 16px; }
           .dl-glass-card { border-radius: 20px; }
-          .dl-page-title { font-size: 26px; gap: 10px; }
+          .dl-page-title { font-size: 26px; gap: 10px; line-height: 1.3; }
           .dl-dropdown-item:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
         }
         
@@ -403,6 +403,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           .dl-content-area { padding: 0 48px 48px; }
           .dl-page-title { font-size: 28px; }
         }
+
+        /* Prevent Text Break Layout Jumps */
+        .dl-page-title-text { white-space: normal; word-break: break-word; line-height: 1.15; }
+        .dl-content-header { min-height: 40px; }
       ` }} />
 
       {/* Mobile overlay */}
@@ -540,11 +544,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Scrollable content */}
           <main className="dl-main-content">
-            <div className="dl-content-header" style={{ display: "flex", alignItems: "center", gap: 12, padding: "32px 40px 0" }}>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="dl-content-header" style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "32px 20px 0" }}>
+              <h1 className="dl-page-title">
                 <span style={{ color: "var(--text-tertiary)", fontWeight: 500 }}>{group}</span>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--blue-primary)" }} />
-                {label}
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--blue-primary)", flexShrink: 0, marginTop: "10px" }} />
+                <span className="dl-page-title-text" style={{ paddingRight: "10px" }}>{label}</span>
               </h1>
             </div>
 

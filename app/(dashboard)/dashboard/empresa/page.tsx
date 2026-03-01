@@ -140,15 +140,7 @@ export default function EmpresaPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="emp-header">
-        <h1 className="emp-title">
-          Sobre sua Empresa
-        </h1>
-        <p className="emp-subtitle">
-          Presença digital mapeada, canais identificados e perfil do cliente ideal
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Canais Identificados */}
       <div className="dl-glass-card emp-card">

@@ -129,15 +129,7 @@ export default function MaturidadePage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="mat-header">
-        <h1 className="mat-title">
-          Maturidade Digital
-        </h1>
-        <p className="mat-subtitle">
-          Nível de presença e performance em cada canal digital
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Summary bar */}
       <div className="dl-glass-card mat-summary">

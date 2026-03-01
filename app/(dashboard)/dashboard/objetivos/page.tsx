@@ -132,15 +132,7 @@ export default function ObjetivosPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="obj-header">
-        <h1 className="obj-title">
-          Objetivos SMART
-        </h1>
-        <p className="obj-subtitle">
-          Metas estruturadas com critérios mensuráveis para guiar seu crescimento
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* SMART Legend */}
       <div className="obj-legend">

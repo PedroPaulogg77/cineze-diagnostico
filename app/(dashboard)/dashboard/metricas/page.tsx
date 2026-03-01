@@ -152,15 +152,7 @@ export default function MetricasPage() {
         }
       ` }} />
 
-      {/* Header */}
-      <div className="met-header">
-        <h1 className="met-title">
-          Métricas de Acompanhamento
-        </h1>
-        <p className="met-subtitle">
-          {list.length} indicadores para monitorar o progresso do seu diagnóstico
-        </p>
-      </div>
+      {/* Layout Header manages the titles now */}
 
       {/* Chart card */}
       {chartData.length > 0 && (
