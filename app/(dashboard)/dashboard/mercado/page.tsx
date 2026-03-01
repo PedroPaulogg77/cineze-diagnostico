@@ -3,30 +3,37 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
-import type { AnaliseMercado } from "@/types"
 
-function fmt(value: number, prefix = "R$") {
-  if (!value) return "—"
-  return `${prefix} ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface TendenciaMes { mes: string; cpm: number; cpc: number }
+
+interface AnaliseMercado {
+  panorama: string
+  desafios: { titulo: string; descricao: string }[]
+  investimento_midia: {
+    valor_recomendado_min: number
+    valor_recomendado_max: number
+    descricao: string
+    cpm: { valor_min: number; valor_max: number; contexto: string }
+    cpc: { valor_min: number; valor_max: number; contexto: string }
+    tendencia_6_meses: TendenciaMes[]
+  }
+  maior_oportunidade: { descricao: string; foco_30_dias: string }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function brl(n: number) {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function brl2(n: number) {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-const IconMoney = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-  </svg>
-)
-const IconBarChart = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-  </svg>
-)
-const IconCursor = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 3l14 9-7 1-3 7-4-17z" />
-  </svg>
-)
 const IconGlobe = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
@@ -45,27 +52,48 @@ const IconArrowUp = () => (
   </svg>
 )
 const IconBulb = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 18h6" /><path d="M10 22h4" />
     <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
   </svg>
 )
 
+// ─── Bar Chart (CSS only) ─────────────────────────────────────────────────────
+
+function BarChart({ items, color }: { items: { mes: string; val: number }[]; color: string }) {
+  const max = Math.max(...items.map(d => d.val), 1)
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {items.map(({ mes, val }) => (
+        <div key={mes} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ width: 26, fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", flexShrink: 0 }}>{mes}</span>
+          <div style={{ flex: 1, height: 7, background: "var(--border-color)", borderRadius: 4, overflow: "hidden" }}>
+            <div style={{ width: `${(val / max) * 100}%`, height: "100%", background: color, borderRadius: 4 }} />
+          </div>
+          <span style={{ width: 56, fontSize: 11, color: "var(--text-secondary)", textAlign: "right", flexShrink: 0 }}>
+            R${brl2(val)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
-    <div style={{ padding: "24px 28px" }}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+    <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes mer-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .mer-sk { animation: mer-pulse 1.6s ease-in-out infinite; background: var(--border-color); border-radius: 12px; }
       ` }} />
-      <div className="rx-pulse" style={{ height: 28, width: 260, borderRadius: 8, background: "var(--border-color)", marginBottom: 8 }} />
-      <div className="rx-pulse" style={{ height: 16, width: 340, borderRadius: 6, background: "var(--border-color)", marginBottom: 32 }} />
-      {[1, 2, 3].map(i => (
-        <div key={i} className="rx-pulse" style={{ height: 80, borderRadius: 16, background: "var(--border-color)", marginBottom: 16 }} />
-      ))}
+      <div className="mer-sk" style={{ height: 140 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {[1, 2, 3, 4].map(i => <div key={i} className="mer-sk" style={{ height: 120 }} />)}
+      </div>
+      <div className="mer-sk" style={{ height: 220 }} />
+      <div className="mer-sk" style={{ height: 140 }} />
     </div>
   )
 }
@@ -76,6 +104,7 @@ export default function MercadoPage() {
   const router = useRouter()
   const [data, setData] = useState<AnaliseMercado | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sliderValue, setSliderValue] = useState(500)
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
@@ -94,7 +123,9 @@ export default function MercadoPage() {
 
       if (!row) { router.replace("/onboarding"); return }
 
-      setData(row.analise_mercado as unknown as AnaliseMercado)
+      const am = row.analise_mercado as unknown as AnaliseMercado
+      setData(am)
+      setSliderValue(am?.investimento_midia?.valor_recomendado_min ?? 500)
       setLoading(false)
     }
     load()
@@ -103,160 +134,259 @@ export default function MercadoPage() {
   if (loading) return <Skeleton />
 
   const d = data!
-
-  const metrics = [
-    {
-      label: "Investimento Mensal Recomendado",
-      value: fmt(d.investimento_mensal_recomendado),
-      sub: "para tráfego pago e mídia",
-      icon: <IconMoney />,
-      color: "var(--blue-dark)",
-      bg: "rgba(0, 71, 179, 0.08)",
-    },
-    {
-      label: "CPM Estimado",
-      value: fmt(d.cpm_estimado),
-      sub: "custo por mil impressões",
-      icon: <IconBarChart />,
-      color: "var(--blue-primary)",
-      bg: "rgba(0, 102, 255, 0.08)",
-    },
-    {
-      label: "CPC Estimado",
-      value: fmt(d.cpc_estimado),
-      sub: "custo por clique",
-      icon: <IconCursor />,
-      color: "var(--blue-light)",
-      bg: "rgba(77, 148, 255, 0.08)",
-    },
-  ]
+  const im = d.investimento_midia
+  const tendencia = im?.tendencia_6_meses ?? []
+  const paragraphs = (d.panorama ?? "").split(/\n\n+/).filter(Boolean)
 
   return (
-    <div className="mer-container">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
-        
-        .mer-container { padding: 16px; }
-        .mer-header { margin-bottom: 24px; }
-        .mer-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-        .mer-subtitle { font-size: 14px; color: var(--text-secondary); }
-        
-        .mer-panorama { padding: 24px; margin-bottom: 24px; }
-        .mer-metrics-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
-        .mer-2col-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        
-        @media (min-width: 768px) {
-          .mer-container { padding: 24px 28px; }
-          .mer-header { margin-bottom: 32px; }
-          .mer-title { font-size: 24px; }
-          .mer-panorama { padding: 32px; }
-          .mer-metrics-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 24px; }
-          .mer-2col-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes mer-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        .mer-page { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+        @media (min-width: 768px) { .mer-page { padding: 24px 28px; gap: 24px; } }
+
+        .mer-section-title {
+          display: flex; align-items: center; gap: 12px;
+          margin-bottom: 16px;
+        }
+        .mer-section-title h2 {
+          font-size: 17px; font-weight: 600;
+          color: var(--text-primary); margin: 0;
+        }
+
+        .mer-icon-wrap {
+          width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Desafios grid */
+        .mer-desafios-grid {
+          display: grid; grid-template-columns: 1fr; gap: 12px;
+        }
+        @media (min-width: 640px) {
+          .mer-desafios-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+        }
+
+        /* Investment layout */
+        .mer-invest-layout {
+          display: flex; flex-direction: column; gap: 24px;
+        }
+        @media (min-width: 900px) {
+          .mer-invest-layout { flex-direction: row; gap: 32px; }
+          .mer-invest-left  { flex: 0 0 38%; }
+          .mer-invest-right { flex: 1; }
+        }
+
+        /* Slider */
+        .mer-slider {
+          -webkit-appearance: none; appearance: none;
+          width: 100%; height: 6px; border-radius: 3px;
+          background: var(--border-color); outline: none; cursor: pointer;
+        }
+        .mer-slider::-webkit-slider-thumb {
+          -webkit-appearance: none; appearance: none;
+          width: 20px; height: 20px; border-radius: 50%;
+          background: #0066FF; cursor: pointer;
+          box-shadow: 0 0 0 4px rgba(0,102,255,0.15);
+        }
+        .mer-slider::-moz-range-thumb {
+          width: 20px; height: 20px; border-radius: 50%; border: none;
+          background: #0066FF; cursor: pointer;
         }
       ` }} />
 
-      {/* Layout Header manages the titles now */}
+      <div className="mer-page">
 
-      {/* Panorama card */}
-      <div className="dl-glass-card mer-panorama">
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--bg-main)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
-            <IconGlobe />
-          </div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Panorama do Mercado</h2>
-        </div>
-        <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>{d.panorama}</p>
-      </div>
-
-      {/* Metrics row */}
-      <div className="mer-metrics-grid">
-        {metrics.map(m => (
-          <div
-            key={m.label}
-            className="dl-glass-card"
-            style={{
-              padding: "24px",
-              border: `1px solid ${m.color}20`,
-              position: "relative",
-              overflow: "hidden"
-            }}
-          >
-            <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: m.bg, opacity: 0.5, pointerEvents: "none" }} />
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ marginBottom: 16, color: m.color, background: "var(--bg-surface)", width: 48, height: 48, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>{m.icon}</div>
-              <p style={{ fontSize: 28, fontWeight: 800, color: m.color, margin: "0 0 6px", letterSpacing: "-0.5px" }}>{m.value}</p>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px" }}>{m.label}</p>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>{m.sub}</p>
+        {/* ── SEÇÃO 1: PANORAMA ──────────────────────────────────────────── */}
+        <div className="dl-glass-card" style={{ padding: "24px 28px" }}>
+          <div className="mer-section-title">
+            <div className="mer-icon-wrap" style={{ background: "var(--blue-transparent)", color: "var(--blue-primary)" }}>
+              <IconGlobe />
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Two-column row: Desafios + Oportunidade */}
-      <div className="mer-2col-grid">
-        {/* Desafios */}
-        <div
-          className="dl-glass-card"
-          style={{ padding: "32px" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(239, 68, 68, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--danger)", flexShrink: 0 }}>
-              <IconAlert />
-            </div>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Desafios do Segmento</h2>
+            <h2>Panorama do Mercado</h2>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {d.desafios?.map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  background: "rgba(239,68,68,0.1)",
-                  border: "1px solid rgba(239,68,68,0.2)",
-                  flexShrink: 0, marginTop: 2,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, fontWeight: 700, color: "#EF4444",
-                }}>
-                  {i + 1}
+            {paragraphs.length > 0
+              ? paragraphs.map((p, i) => (
+                  <p key={i} style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.8, margin: 0 }}>{p}</p>
+                ))
+              : <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.8, margin: 0 }}>{d.panorama}</p>
+            }
+          </div>
+        </div>
+
+        {/* ── SEÇÃO 2: DESAFIOS ──────────────────────────────────────────── */}
+        <div>
+          <div className="mer-section-title">
+            <div className="mer-icon-wrap" style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444" }}>
+              <IconAlert />
+            </div>
+            <h2>Desafios do Segmento</h2>
+          </div>
+
+          <div className="mer-desafios-grid">
+            {(d.desafios ?? []).map((item, i) => (
+              <div
+                key={i}
+                className="dl-glass-card"
+                style={{ padding: "20px 22px" }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                    background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 13, fontWeight: 700, color: "#EF4444",
+                  }}>
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px", lineHeight: 1.3 }}>
+                      {typeof item === "string" ? item : item.titulo}
+                    </p>
+                    {typeof item !== "string" && item.descricao && (
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                        {item.descricao}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <span style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6 }}>{item}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Oportunidade */}
-        <div
-          className="dl-glass-card"
-          style={{
-            background: "linear-gradient(135deg, rgba(0,102,255,0.06) 0%, rgba(77,148,255,0.02) 100%)",
-            border: "1px solid rgba(0,102,255,0.15)",
-            padding: "32px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,102,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-primary)", flexShrink: 0 }}>
-              <IconArrowUp />
+        {/* ── SEÇÃO 3: INVESTIMENTO EM MÍDIA ─────────────────────────────── */}
+        {im && (
+          <div className="dl-glass-card" style={{ padding: "24px 28px" }}>
+            <div className="mer-section-title">
+              <div className="mer-icon-wrap" style={{ background: "rgba(34,197,94,0.1)", color: "#22C55E" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <h2>Investimento em Mídia no Setor</h2>
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Maior Oportunidade</h2>
+
+            <div className="mer-invest-layout">
+
+              {/* Coluna esquerda */}
+              <div className="mer-invest-left">
+                {/* Valor simulado */}
+                <p style={{ fontSize: 40, fontWeight: 700, color: "#0066FF", margin: "0 0 4px", lineHeight: 1, letterSpacing: "-1px" }}>
+                  R$ {brl(sliderValue)}
+                </p>
+                <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: "0 0 6px" }}>
+                  Recomendado: R$ {brl(im.valor_recomendado_min)} — R$ {brl(im.valor_recomendado_max)}
+                </p>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: "0 0 24px", lineHeight: 1.5 }}>
+                  {im.descricao}
+                </p>
+
+                {/* Slider */}
+                <input
+                  type="range"
+                  min={500}
+                  max={10000}
+                  step={100}
+                  value={sliderValue}
+                  onChange={e => setSliderValue(Number(e.target.value))}
+                  className="mer-slider"
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                  <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>R$ 500</span>
+                  <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>R$ 10.000</span>
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 8, textAlign: "center" }}>
+                  Arraste para simular seu investimento
+                </p>
+              </div>
+
+              {/* Coluna direita */}
+              <div className="mer-invest-right" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+                {/* CPM */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>CPM</span>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>6 meses</span>
+                    <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 700, color: "#0066FF" }}>
+                      R$ {brl2(im.cpm.valor_max)}
+                    </span>
+                  </div>
+                  <BarChart
+                    items={tendencia.map(t => ({ mes: t.mes, val: t.cpm }))}
+                    color="#0066FF"
+                  />
+                </div>
+
+                {/* Separator */}
+                <div style={{ height: 1, background: "var(--border-color)" }} />
+
+                {/* CPC */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>CPC</span>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>6 meses</span>
+                    <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 700, color: "#22C55E" }}>
+                      R$ {brl2(im.cpc.valor_max)}
+                    </span>
+                  </div>
+                  <BarChart
+                    items={tendencia.map(t => ({ mes: t.mes, val: t.cpc }))}
+                    color="#22C55E"
+                  />
+                </div>
+
+                {/* Contexto */}
+                {im.cpm.contexto && (
+                  <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: 0 }}>
+                    Referência para: {im.cpm.contexto}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>{d.oportunidade}</p>
-          <div style={{
-            marginTop: 24,
-            padding: "16px 20px",
-            borderRadius: 12,
-            background: "rgba(0,102,255,0.08)",
-            border: "1px solid rgba(0,102,255,0.15)",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <span style={{ color: "var(--blue-primary)", flexShrink: 0 }}><IconBulb /></span>
-            <p style={{ fontSize: 14, color: "var(--blue-primary)", fontWeight: 600, margin: 0 }}>
-              Foque aqui nos próximos 30 dias para resultados mais rápidos
+        )}
+
+        {/* ── SEÇÃO 4: MAIOR OPORTUNIDADE ────────────────────────────────── */}
+        {d.maior_oportunidade && (
+          <div
+            className="dl-glass-card"
+            style={{
+              padding: "24px 28px",
+              borderColor: "rgba(0,102,255,0.2)",
+              background: "linear-gradient(135deg, rgba(0,102,255,0.05) 0%, rgba(77,148,255,0.02) 100%)",
+            }}
+          >
+            <div className="mer-section-title">
+              <div className="mer-icon-wrap" style={{ background: "rgba(0,102,255,0.1)", color: "var(--blue-primary)" }}>
+                <IconArrowUp />
+              </div>
+              <h2>Maior Oportunidade</h2>
+            </div>
+
+            <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.8, margin: "0 0 20px" }}>
+              {d.maior_oportunidade.descricao}
             </p>
+
+            <div style={{
+              padding: "16px 20px", borderRadius: 12,
+              background: "rgba(0,102,255,0.08)", border: "1px solid rgba(0,102,255,0.2)",
+              display: "flex", alignItems: "flex-start", gap: 12,
+            }}>
+              <span style={{ color: "var(--blue-primary)", flexShrink: 0, marginTop: 1 }}>
+                <IconBulb />
+              </span>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--blue-primary)", margin: 0, lineHeight: 1.5 }}>
+                Foque aqui nos próximos 30 dias: {d.maior_oportunidade.foco_30_dias}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
       </div>
-    </div>
+    </>
   )
 }
