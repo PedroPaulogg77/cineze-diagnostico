@@ -183,8 +183,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 7. Enviar magic link de acesso por email
-  const { error: magicLinkError } = await supabase.auth.admin.generateLink({
+  // 7. Gerar magic link e enviar email via Resend
+  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
     type: "magiclink",
     email,
     options: {
@@ -192,12 +192,97 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (magicLinkError) {
-    console.error("Erro ao enviar magic link:", magicLinkError)
+  if (linkError || !linkData?.properties?.action_link) {
+    console.error("Erro ao gerar magic link:", linkError)
     // Não bloqueia — plano já foi ativado, usuário pode pedir novo link no login
+  } else {
+    const magicUrl = linkData.properties.action_link
+    const resendKey = process.env.RESEND_API_KEY
+
+    if (!resendKey) {
+      console.error("RESEND_API_KEY não configurada — email não enviado")
+    } else {
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background-color:#060E1C;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#060E1C;padding:48px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#0A1628;border-radius:20px;border:1px solid rgba(6,183,216,0.18);overflow:hidden;">
+<tr><td style="height:3px;background:linear-gradient(90deg,#06B7D8,#0EA5E9,#06B7D8);"></td></tr>
+<tr><td align="center" style="padding:40px 40px 36px;">
+  <img src="https://cineze.com.br/assets/logo-cineze-CKvDmt6k.png" alt="Cineze" width="140" style="display:block;height:auto;"/>
+</td></tr>
+<tr><td style="padding:0 40px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(6,183,216,0.25),transparent);"></div></td></tr>
+<tr><td align="center" style="padding:40px 40px 16px;">
+  <h1 style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;line-height:1.4;">Seu acesso está pronto</h1>
+</td></tr>
+<tr><td align="center" style="padding:0 40px 36px;">
+  <p style="margin:0;font-size:15px;color:#8B9DB5;line-height:1.75;text-align:center;">
+    Seu pagamento foi confirmado. Clique no botão abaixo para acessar a plataforma e receber seu diagnóstico empresarial personalizado com inteligência artificial.
+  </p>
+</td></tr>
+<tr><td align="center" style="padding:0 40px 40px;">
+  <a href="${magicUrl}" style="display:inline-block;background:linear-gradient(135deg,#06B7D8,#0EA5E9);color:#060E1C;font-size:14px;font-weight:800;text-decoration:none;padding:16px 52px;border-radius:50px;letter-spacing:0.5px;box-shadow:0 0 32px rgba(6,183,216,0.3);">
+    ACESSAR MEU DIAGNÓSTICO
+  </a>
+</td></tr>
+<tr><td style="padding:0 40px 36px;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(6,183,216,0.05);border:1px solid rgba(6,183,216,0.12);border-radius:12px;">
+  <tr><td style="padding:22px 24px;">
+    <p style="margin:0 0 14px 0;font-size:11px;font-weight:700;color:#06B7D8;letter-spacing:1px;text-transform:uppercase;">O que você vai receber</p>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+      <tr><td style="padding:5px 0;font-size:13px;color:#8B9DB5;"><span style="color:#06B7D8;margin-right:10px;">—</span>Raio-X completo do seu negócio</td></tr>
+      <tr><td style="padding:5px 0;font-size:13px;color:#8B9DB5;"><span style="color:#06B7D8;margin-right:10px;">—</span>Análise de maturidade digital</td></tr>
+      <tr><td style="padding:5px 0;font-size:13px;color:#8B9DB5;"><span style="color:#06B7D8;margin-right:10px;">—</span>Posicionamento de mercado</td></tr>
+      <tr><td style="padding:5px 0;font-size:13px;color:#8B9DB5;"><span style="color:#06B7D8;margin-right:10px;">—</span>Plano de ação personalizado</td></tr>
+      <tr><td style="padding:5px 0;font-size:13px;color:#8B9DB5;"><span style="color:#06B7D8;margin-right:10px;">—</span>Objetivos SMART e métricas</td></tr>
+    </table>
+  </td></tr></table>
+</td></tr>
+<tr><td align="center" style="padding:0 40px 28px;">
+  <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;text-align:center;">
+    Se o botão não funcionar, copie e cole no navegador:<br/>
+    <a href="${magicUrl}" style="color:#06B7D8;text-decoration:none;word-break:break-all;font-size:11px;">${magicUrl}</a>
+  </p>
+</td></tr>
+<tr><td style="padding:0 40px;"><div style="height:1px;background:rgba(255,255,255,0.05);"></div></td></tr>
+<tr><td align="center" style="padding:24px 40px 32px;">
+  <p style="margin:0 0 8px 0;font-size:12px;color:#374151;line-height:1.6;">Este link expira em <strong style="color:#4A5568;">24 horas</strong>. Se não solicitou o acesso, ignore este email.</p>
+  <p style="margin:0;font-size:11px;color:#1F2937;">
+    <a href="https://cineze.com.br" style="color:#06B7D8;text-decoration:none;">cineze.com.br</a>
+    <span style="color:#374151;">&nbsp;·&nbsp;</span>
+    <a href="https://diagnostico.cineze.com.br" style="color:#06B7D8;text-decoration:none;">diagnostico.cineze.com.br</a>
+  </p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`
+
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${resendKey}`,
+        },
+        body: JSON.stringify({
+          from: "Cineze <noreply@cineze.com.br>",
+          to: [email],
+          subject: "Seu acesso ao Diagnóstico Cineze",
+          html,
+        }),
+      })
+
+      if (!resendRes.ok) {
+        const resendError = await resendRes.text()
+        console.error("Resend erro ao enviar email:", resendError)
+      } else {
+        console.log(`✉ Email de acesso enviado para ${email}`)
+      }
+    }
   }
 
-  console.log(`✓ Acesso criado e magic link enviado para ${email} | order_nsu: ${order_nsu}`)
+  console.log(`✓ Acesso criado para ${email} | order_nsu: ${order_nsu}`)
 
   // 8. Retornar 200 rapidamente para o InfinitePay não reenviar
   return NextResponse.json({ received: true, processed: true })
