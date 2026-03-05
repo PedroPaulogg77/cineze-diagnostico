@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Rotas que qualquer um pode acessar sem sessão
-const PUBLIC_ROUTES = ["/login", "/signup", "/pagamento", "/acesso"]
+const PUBLIC_ROUTES = ["/login", "/signup"]
 
 // Rotas de autenticação — redireciona para o dashboard se já logado
 const AUTH_ROUTES = ["/login", "/signup"]
@@ -14,7 +14,6 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/auth/callback") ||
-    pathname.startsWith("/api/pagamento/webhook") ||
     pathname.startsWith("/api/webhook/infinitepay") ||
     pathname.includes(".")
   ) {
@@ -89,9 +88,9 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single()
 
-    // 3. Sem plano ativo → pagamento
+    // 3. Sem plano ativo → site de vendas
     if (!profile?.plano_ativo) {
-      return NextResponse.redirect(new URL("/pagamento", request.url))
+      return NextResponse.redirect("https://cineze.com.br")
     }
 
     // 4. Plano ativo mas onboarding pendente → /onboarding
