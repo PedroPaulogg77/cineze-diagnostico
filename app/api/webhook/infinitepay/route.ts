@@ -112,29 +112,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Erro ao obter ID do usuário" }, { status: 500 })
   }
 
-  // 5. Ativar plano no perfil
+  // 5. Ativar plano no perfil (upsert garante que funciona mesmo sem row prévia)
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({
-      plano_ativo: true,
-      pagamento_id: transaction_nsu,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userId)
-
-  if (profileError) {
-    console.warn("Perfil não encontrado, criando manualmente:", profileError)
-    await supabase.from("profiles").upsert(
+    .upsert(
       {
         id: userId,
-        nome_responsavel: "",
-        nome_negocio: "",
         plano_ativo: true,
         pagamento_id: transaction_nsu,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }
     )
+
+  if (profileError) {
+    console.error("Erro ao ativar plano no perfil:", profileError)
   }
 
   console.log(`✓ Convite enviado para ${email} | order_nsu: ${order_nsu}`)
