@@ -145,28 +145,16 @@ export async function POST(request: NextRequest) {
     // userId virá do generateLink logo abaixo
   }
 
-  // 5. Gerar link de redefinição de senha e enviar email
-  //
-  //    generateLink com type "recovery":
-  //    → Gera um link "Definir senha" e envia automaticamente via Supabase Email
-  //    → Também retorna o user.id (útil quando o usuário já existia)
-  //    → Requer SMTP configurado em: Supabase Dashboard → Auth → SMTP Settings
-  //
-  const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/raio-x`,
-    },
-  })
-
-  if (recoveryError || !recoveryData?.user?.id) {
-    console.error("Erro ao gerar link de acesso:", recoveryError)
-    return NextResponse.json({ error: "Erro ao enviar email de acesso" }, { status: 500 })
+  // 5. Se o usuário já existia, buscar o ID pelo email
+  if (!userId) {
+    const { data: listData } = await supabase.auth.admin.listUsers()
+    const existingUser = listData?.users?.find((u) => u.email === email)
+    if (!existingUser) {
+      console.error("Usuário não encontrado após criação:", email)
+      return NextResponse.json({ error: "Erro ao localizar usuário" }, { status: 500 })
+    }
+    userId = existingUser.id
   }
-
-  // Usar userId do recovery se não tínhamos (usuário já existia)
-  userId = userId ?? recoveryData.user.id
 
   // 6. Ativar plano no perfil
   //    O trigger on_auth_user_created já criou o perfil ao criar o usuário.

@@ -58,13 +58,24 @@ export interface MaturidadeCanal {
   o_que_falta: string[]
 }
 
+export interface TendenciaMes {
+  mes: string
+  cpm: number
+  cpc: number
+}
+
 export interface AnaliseMercado {
   panorama: string
-  desafios: string[]
-  investimento_mensal_recomendado: number
-  cpm_estimado: number
-  cpc_estimado: number
-  oportunidade: string
+  desafios: { titulo: string; descricao: string }[]
+  investimento_midia: {
+    valor_recomendado_min: number
+    valor_recomendado_max: number
+    descricao: string
+    cpm: { valor_min: number; valor_max: number; contexto: string }
+    cpc: { valor_min: number; valor_max: number; contexto: string }
+    tendencia_6_meses: TendenciaMes[]
+  }
+  maior_oportunidade: { descricao: string; foco_30_dias: string }
 }
 
 export interface CanalIdentificado {
@@ -109,8 +120,10 @@ export interface Comunicacao {
 }
 
 export interface ObjetivoSMART {
+  numero?: number
   titulo: string
-  meta: string
+  meta_resumida?: string
+  meta?: string // campo legado
   especifico: string
   mensuravel: string
   atingivel: string

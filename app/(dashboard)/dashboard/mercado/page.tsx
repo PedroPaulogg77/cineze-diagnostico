@@ -1,26 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface TendenciaMes { mes: string; cpm: number; cpc: number }
-
-interface AnaliseMercado {
-  panorama: string
-  desafios: { titulo: string; descricao: string }[]
-  investimento_midia: {
-    valor_recomendado_min: number
-    valor_recomendado_max: number
-    descricao: string
-    cpm: { valor_min: number; valor_max: number; contexto: string }
-    cpc: { valor_min: number; valor_max: number; contexto: string }
-    tendencia_6_meses: TendenciaMes[]
-  }
-  maior_oportunidade: { descricao: string; foco_30_dias: string }
-}
+import type { AnaliseMercado } from "@/types"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,10 +67,6 @@ function BarChart({ items, color }: { items: { mes: string; val: number }[]; col
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes mer-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .mer-sk { animation: mer-pulse 1.6s ease-in-out infinite; background: var(--border-color); border-radius: 12px; }
-      ` }} />
       <div className="mer-sk" style={{ height: 140 }} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {[1, 2, 3, 4].map(i => <div key={i} className="mer-sk" style={{ height: 120 }} />)}
@@ -107,9 +86,11 @@ export default function MercadoPage() {
   const [sliderValue, setSliderValue] = useState(500)
 
   useEffect(() => {
+    let cancelled = false
     const supabase = createBrowserSupabaseClient()
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
+      if (cancelled) return
       if (!user) { router.replace("/login"); return }
 
       const { data: row } = await supabase
@@ -121,6 +102,7 @@ export default function MercadoPage() {
         .limit(1)
         .maybeSingle()
 
+      if (cancelled) return
       if (!row) { router.replace("/onboarding"); return }
 
       const am = row.analise_mercado as unknown as AnaliseMercado
@@ -129,6 +111,7 @@ export default function MercadoPage() {
       setLoading(false)
     }
     load()
+    return () => { cancelled = true }
   }, [router])
 
   if (loading) return <Skeleton />
@@ -136,7 +119,7 @@ export default function MercadoPage() {
   const d = data!
   const im = d.investimento_midia
   const tendencia = im?.tendencia_6_meses ?? []
-  const paragraphs = (d.panorama ?? "").split(/\n\n+/).filter(Boolean)
+  const paragraphs = useMemo(() => (d.panorama ?? "").split(/\n\n+/).filter(Boolean), [d])
 
   return (
     <>

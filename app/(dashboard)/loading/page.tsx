@@ -66,7 +66,7 @@ export default function LoadingPage() {
       setProgress(100)
       sessionStorage.removeItem("cineze_onboarding_payload")
 
-      setTimeout(() => {
+      timersRef.current.progress = setTimeout(() => {
         router.replace(`/dashboard/raio-x?id=${id}`)
       }, 800)
     } catch (err) {

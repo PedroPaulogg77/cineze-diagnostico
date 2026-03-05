@@ -51,6 +51,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // ── Raiz → redireciona conforme estado da sessão ────────────────────────────
+  if (pathname === "/") {
+    return NextResponse.redirect(
+      new URL(user ? "/dashboard/raio-x" : "/login", request.url)
+    )
+  }
+
   // ── Usuário logado tentando acessar página de auth ──────────────────────────
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     return NextResponse.redirect(new URL("/dashboard/raio-x", request.url))

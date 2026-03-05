@@ -148,19 +148,19 @@ export async function POST(request: NextRequest) {
   // 6. Montar mensagem para o sintetizador com todos os relatórios
   const msgSintetizador = `${dadosFormatados}
 RELATÓRIO — AGENTE 1 (Analista de Negócio):
-${agente1 ? JSON.stringify(agente1, null, 2) : "Dados não disponíveis"}
+${agente1 ? JSON.stringify(agente1) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 2 (Presença Digital):
-${agente2 ? JSON.stringify(agente2, null, 2) : "Dados não disponíveis"}
+${agente2 ? JSON.stringify(agente2) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 3 (Captação e Conversão):
-${agente3 ? JSON.stringify(agente3, null, 2) : "Dados não disponíveis"}
+${agente3 ? JSON.stringify(agente3) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 4 (Posicionamento):
-${agente4 ? JSON.stringify(agente4, null, 2) : "Dados não disponíveis"}
+${agente4 ? JSON.stringify(agente4) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 5 (Retenção e Crescimento):
-${agente5 ? JSON.stringify(agente5, null, 2) : "Dados não disponíveis"}`
+${agente5 ? JSON.stringify(agente5) : "Dados não disponíveis"}`
 
   // 7. Sintetizador integra tudo e gera o diagnóstico final
   const resultado = await chamarAgente<ResultadoDiagnostico>(

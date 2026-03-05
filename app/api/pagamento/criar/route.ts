@@ -14,9 +14,13 @@ function gerarOrderNsu(): string {
 export async function POST(request: NextRequest) {
   // 1. Validar body
   let email: string
+  let nome: string
+  let telefone: string
   try {
     const body = await request.json()
     email = (body.email ?? "").toLowerCase().trim()
+    nome = (body.nome ?? "").trim()
+    telefone = (body.telefone ?? "").replace(/\D/g, "")
   } catch {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 })
   }
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
           order_nsu: orderNsu,
           redirect_url: `${appUrl}/acesso?order_nsu=${orderNsu}`,
           webhook_url: `${appUrl}/api/pagamento/webhook`,
-          customer: { email },
+          customer: { name: nome, email, phone_number: telefone },
         }),
       }
     )

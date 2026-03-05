@@ -7,7 +7,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Theme = "default" | "dark-gray" | "light"
+type Theme = "default" | "light"
 
 interface NavItem {
   href: string
@@ -117,6 +117,7 @@ function getInitials(name: string): string {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const supabase = createBrowserSupabaseClient()
   const [theme, setTheme] = useState<Theme>("light")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -145,7 +146,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile and check if a completed diagnostico exists
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
 
@@ -197,7 +197,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function handleSignOut() {
-    const supabase = createBrowserSupabaseClient()
     await supabase.auth.signOut()
     router.push("/login")
   }

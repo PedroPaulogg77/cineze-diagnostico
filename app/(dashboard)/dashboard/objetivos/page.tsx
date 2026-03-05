@@ -3,20 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Objetivo {
-  numero?: number
-  titulo: string
-  meta_resumida?: string
-  meta?: string           // campo legado
-  especifico: string
-  mensuravel: string
-  atingivel: string
-  relevante: string
-  temporal: string
-}
+import type { ObjetivoSMART } from "@/types"
 
 // ─── SMART Config ─────────────────────────────────────────────────────────────
 
@@ -47,11 +34,6 @@ function ChevronIcon({ up, color }: { up: boolean; color: string }) {
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px" }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes obj-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .obj-sk { animation: obj-pulse 1.6s ease-in-out infinite; background: var(--border-color); }
-      ` }} />
-
       <div className="obj-sk" style={{ height: 28, width: 180, borderRadius: 8, marginBottom: 8 }} />
       <div className="obj-sk" style={{ height: 16, width: 320, borderRadius: 6, marginBottom: 10 }} />
       <div className="obj-sk" style={{ height: 30, width: 190, borderRadius: 9999, marginBottom: 28 }} />
@@ -72,14 +54,16 @@ function Skeleton() {
 
 export default function ObjetivosPage() {
   const router = useRouter()
-  const [objetivos, setObjetivos] = useState<Objetivo[] | null>(null)
+  const [objetivos, setObjetivos] = useState<ObjetivoSMART[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     const supabase = createBrowserSupabaseClient()
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
+      if (cancelled) return
       if (!user) { router.replace("/login"); return }
 
       const { data: row } = await supabase
@@ -91,12 +75,14 @@ export default function ObjetivosPage() {
         .limit(1)
         .maybeSingle()
 
+      if (cancelled) return
       if (!row) { router.replace("/onboarding"); return }
 
-      setObjetivos(row.objetivos_smart as unknown as Objetivo[])
+      setObjetivos(row.objetivos_smart as unknown as ObjetivoSMART[])
       setLoading(false)
     }
     load()
+    return () => { cancelled = true }
   }, [router])
 
   if (loading) return <Skeleton />

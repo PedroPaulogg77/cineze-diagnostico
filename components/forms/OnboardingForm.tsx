@@ -5,10 +5,6 @@ import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { OnboardingFormData } from "@/types"
 
-function getSupabase() {
-  return createBrowserSupabaseClient()
-}
-
 // ─── localStorage helpers ──────────────────────────────────────────────────────
 
 function lsGet(key: string): string | null {
@@ -21,7 +17,7 @@ function lsSet(key: string, value: string) {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FormValue = string | string[] | null
-type FormData = Record<string, FormValue>
+type FormFields = Record<string, FormValue>
 
 interface SimpleField {
   id: string
@@ -192,7 +188,7 @@ function str(v: FormValue): string {
   return v || "N/A"
 }
 
-function buildRichContext(data: FormData): string {
+function buildRichContext(data: FormFields): string {
   const lines = [
     `TEMPO DE MERCADO: ${str(data.b1_tempo)}`,
     `FORMATO DE ATUAÇÃO: ${str(data.b1_formato)}`,
@@ -248,7 +244,7 @@ function buildRichContext(data: FormData): string {
   return richCtx + extraDoUsuario
 }
 
-function buildApiPayload(data: FormData, userEmail: string): OnboardingFormData {
+function buildApiPayload(data: FormFields, userEmail: string): OnboardingFormData {
   const canaisAtivos: string[] = []
   if (Array.isArray(data.b4_origem)) canaisAtivos.push(...data.b4_origem)
 
@@ -334,7 +330,7 @@ function CardGroup({ field, value, onChange }: {
 
 function FieldRenderer({ field, data, onChange }: {
   field: SubField | Field
-  data: FormData
+  data: FormFields
   onChange: (id: string, value: FormValue) => void
 }) {
   const value = data[field.id] ?? ""
@@ -527,7 +523,7 @@ function InitLoadingScreen() {
 export default function OnboardingForm() {
   const router = useRouter()
   const [currentBlock, setCurrentBlock] = useState(0)
-  const [formData, setFormData] = useState<FormData>({})
+  const [formData, setFormData] = useState<FormFields>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [animClass, setAnimClass] = useState("")
   const [isNavigating, setIsNavigating] = useState(false)
@@ -535,7 +531,6 @@ export default function OnboardingForm() {
 
   // "loading" → checking localStorage, "form" → show form, "retry" → show retry screen
   const [initState, setInitState] = useState<"loading" | "form" | "retry">("loading")
-  const [savedNomenegocio, setSavedNomenegocio] = useState("")
   const [retryLoading, setRetryLoading] = useState(false)
   const [retryError, setRetryError] = useState("")
 
@@ -550,7 +545,7 @@ export default function OnboardingForm() {
 
   useEffect(() => {
     async function init() {
-      const supabase = getSupabase()
+      const supabase = createBrowserSupabaseClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setInitState("form"); return }
 
@@ -562,9 +557,8 @@ export default function OnboardingForm() {
 
       if (savedRaw) {
         try {
-          const saved = JSON.parse(savedRaw) as FormData
+          const saved = JSON.parse(savedRaw) as FormFields
           setFormData(saved)
-          setSavedNomenegocio((saved.b1_nome as string) || "")
           if (completed) {
             setInitState("retry")
             return
@@ -579,7 +573,7 @@ export default function OnboardingForm() {
 
   // ── Auto-save on block navigation ──────────────────────────────────────────
 
-  function saveProgress(data: FormData) {
+  function saveProgress(data: FormFields) {
     const userId = userIdRef.current
     if (!userId) return
     lsSet(`cineze_form_data_${userId}`, JSON.stringify(data))
@@ -678,7 +672,7 @@ export default function OnboardingForm() {
     if (!validateCurrentBlock()) return
     setSubmitError("")
 
-    const supabase = getSupabase()
+    const supabase = createBrowserSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSubmitError("Sessão expirada. Recarregue a página."); return }
 
@@ -687,26 +681,27 @@ export default function OnboardingForm() {
 
     const payload = buildApiPayload(formData, user.email ?? "")
 
-    // Persist to DB (fields that always existed)
+    // Persist to DB — both writes are independent, run in parallel
     const objetivo = formData.b10_objetivo
-    const { error: upsertError } = await supabase.from("onboarding_respostas").upsert({
-      user_id: user.id,
-      objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
-      descricao_clientes: (formData.b3_ideal as string) || "",
-      canais_ativos: Array.isArray(formData.b4_origem) ? formData.b4_origem : [],
-      contexto_extra: buildRichContext(formData),
-      completed: true,
-    }, { onConflict: "user_id" })
+    const [{ error: upsertError }] = await Promise.all([
+      supabase.from("onboarding_respostas").upsert({
+        user_id: user.id,
+        objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
+        descricao_clientes: (formData.b3_ideal as string) || "",
+        canais_ativos: Array.isArray(formData.b4_origem) ? formData.b4_origem : [],
+        contexto_extra: payload.contexto_extra,
+        completed: true,
+      }, { onConflict: "user_id" }),
+      supabase.from("profiles").update({
+        nome_negocio: (formData.b1_nome as string) || "",
+        cidade_bairro: (formData.b1_local as string) || "",
+        segmento: (formData.b1_resumo as string) || "",
+        faturamento_faixa: (formData.b2_fat as string) || "",
+        onboarding_completo: true,
+      }).eq("id", user.id),
+    ])
 
     if (upsertError) console.error("onboarding_respostas upsert error:", upsertError)
-
-    await supabase.from("profiles").update({
-      nome_negocio: (formData.b1_nome as string) || "",
-      cidade_bairro: (formData.b1_local as string) || "",
-      segmento: (formData.b1_resumo as string) || "",
-      faturamento_faixa: (formData.b2_fat as string) || "",
-      onboarding_completo: true,
-    }).eq("id", user.id)
 
     // Persist form + payload to localStorage for retry resilience
     lsSet(`cineze_form_data_${user.id}`, JSON.stringify(formData))
@@ -723,7 +718,7 @@ export default function OnboardingForm() {
     setRetryError("")
     setRetryLoading(true)
     try {
-      const supabase = getSupabase()
+      const supabase = createBrowserSupabaseClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setRetryError("Sessão expirada. Recarregue a página.")
@@ -758,7 +753,7 @@ export default function OnboardingForm() {
   if (initState === "retry") {
     return (
       <RetryScreen
-        nomenegocio={savedNomenegocio}
+        nomenegocio={(formData.b1_nome as string) || ""}
         onRetry={handleRetry}
         onEdit={() => setInitState("form")}
         loading={retryLoading}
