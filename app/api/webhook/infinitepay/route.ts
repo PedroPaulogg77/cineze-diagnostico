@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     type: "magiclink",
     email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/onboarding`,
     },
   })
 

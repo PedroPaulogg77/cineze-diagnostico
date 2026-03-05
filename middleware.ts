@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
   // Deixa passar recursos estáticos e webhook de pagamento (precisa do body raw)
   if (
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/api/pagamento/webhook") ||
     pathname.startsWith("/api/webhook/infinitepay") ||
     pathname.includes(".")
