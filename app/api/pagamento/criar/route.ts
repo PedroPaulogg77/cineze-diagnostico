@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
           ],
           order_nsu: orderNsu,
           redirect_url: `${appUrl}/acesso?order_nsu=${orderNsu}`,
-          webhook_url: `${appUrl}/api/pagamento/webhook`,
+          webhook_url: `${appUrl}/api/webhook/infinitepay`,
           customer: { name: nome, email, phone_number: telefone },
         }),
       }

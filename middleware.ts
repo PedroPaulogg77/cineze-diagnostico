@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/pagamento/webhook") ||
+    pathname.startsWith("/api/webhook/infinitepay") ||
     pathname.includes(".")
   ) {
     return NextResponse.next()
