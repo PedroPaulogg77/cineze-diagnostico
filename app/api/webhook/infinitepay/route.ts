@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
     .upsert(
       {
         id: userId,
+        nome_responsavel: "",
         plano_ativo: true,
         pagamento_id: transaction_nsu,
         updated_at: new Date().toISOString(),
