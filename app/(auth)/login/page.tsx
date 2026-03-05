@@ -1,113 +1,193 @@
 "use client"
 
 import { Suspense, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
+type Aba = "senha" | "magiclink"
+type EstadoMagic = "idle" | "loading" | "enviado"
+
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get("redirect") || "/dashboard/raio-x"
 
+  const [aba, setAba] = useState<Aba>("magiclink")
+
+  // Senha
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [erroSenha, setErroSenha] = useState("")
+  const [loadingSenha, setLoadingSenha] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Magic link
+  const [emailMagic, setEmailMagic] = useState("")
+  const [estadoMagic, setEstadoMagic] = useState<EstadoMagic>("idle")
+  const [erroMagic, setErroMagic] = useState("")
+
+  async function handleLoginSenha(e: React.FormEvent) {
     e.preventDefault()
-    setError("")
-    setLoading(true)
-
-    console.log("[LOGIN] Iniciando fluxo de login...")
-    console.log("[LOGIN] Email:", email)
-
+    setErroSenha("")
+    setLoadingSenha(true)
     try {
-      console.log("[LOGIN] Criando cliente Supabase browser...")
       const supabase = createBrowserSupabaseClient()
-
-      console.log("[LOGIN] Enviando credenciais para API Supabase...")
-
-      // Promise race para evitar hang infinito
-      const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout na requisição de login. O servidor demorou muito para responder.")), 15000)
-      )
-
-      const authPromise = supabase.auth.signInWithPassword({ email, password })
-      const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any
-
-      console.log("[LOGIN] Resposta do Supabase:", { data, error })
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
-        console.error("[LOGIN] Login error:", error)
-        setError(error?.message || "E-mail ou senha incorretos.")
-        setLoading(false)
+        setErroSenha("E-mail ou senha incorretos.")
+        setLoadingSenha(false)
         return
       }
-
-      console.log("[LOGIN] Sucesso. Redirecionando para:", redirect)
       window.location.href = redirect
-    } catch (err: any) {
-      console.error("[LOGIN] Unexpected error during login:", err)
-      setError(err?.message || "Ocorreu um erro ao conectar com o servidor.")
-      setLoading(false)
+    } catch {
+      setErroSenha("Erro ao conectar com o servidor.")
+      setLoadingSenha(false)
     }
   }
 
+  async function handleMagicLink(e: React.FormEvent) {
+    e.preventDefault()
+    setErroMagic("")
+    const emailNorm = emailMagic.toLowerCase().trim()
+    if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+      setErroMagic("Digite um email válido.")
+      return
+    }
+    setEstadoMagic("loading")
+    try {
+      const supabase = createBrowserSupabaseClient()
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailNorm,
+        options: {
+          emailRedirectTo: `${window.location.origin}${redirect}`,
+          shouldCreateUser: false,
+        },
+      })
+      if (error) {
+        setErroMagic("Não foi possível enviar o link. Verifique o email ou entre em contato.")
+        setEstadoMagic("idle")
+        return
+      }
+      setEstadoMagic("enviado")
+    } catch {
+      setErroMagic("Erro ao conectar com o servidor.")
+      setEstadoMagic("idle")
+    }
+  }
+
+  const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+
   return (
-    <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Entrar</h1>
-      <p className="text-gray-500 mb-8">Acesse sua conta para continuar</p>
+    <div className="w-full max-w-md px-8 py-10 bg-white rounded-2xl shadow-lg">
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">Acessar plataforma</h1>
+      <p className="text-gray-500 text-sm mb-8">Acesso exclusivo para clientes Cineze</p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="seu@email.com"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
-
+      {/* Abas */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-8">
         <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          type="button"
+          onClick={() => setAba("magiclink")}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            aba === "magiclink"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
         >
-          {loading ? "Entrando..." : "Entrar"}
+          Magic Link
         </button>
-      </form>
+        <button
+          type="button"
+          onClick={() => setAba("senha")}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            aba === "senha"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Senha
+        </button>
+      </div>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Não tem conta?{" "}
-        <Link href="/signup" className="text-blue-600 hover:underline font-medium">
-          Cadastre-se
-        </Link>
+      {/* Aba Magic Link */}
+      {aba === "magiclink" && (
+        estadoMagic === "enviado" ? (
+          <div className="text-center py-4">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-7 h-7 text-blue-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">Link enviado!</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Verifique sua caixa de entrada em <span className="font-medium text-gray-700">{emailMagic}</span>.<br />
+              Clique no link para entrar automaticamente.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setEstadoMagic("idle"); setEmailMagic("") }}
+              className="mt-6 text-sm text-blue-600 hover:underline"
+            >
+              Usar outro email
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleMagicLink} className="space-y-4">
+            <p className="text-sm text-gray-500 -mt-2 mb-2">
+              Informe seu email e enviaremos um link de acesso direto — sem precisar de senha.
+            </p>
+            <input
+              type="email"
+              value={emailMagic}
+              onChange={e => { setEmailMagic(e.target.value); setErroMagic("") }}
+              placeholder="seu@email.com"
+              disabled={estadoMagic === "loading"}
+              className={inputClass}
+            />
+            {erroMagic && <p className="text-sm text-red-600">{erroMagic}</p>}
+            <button
+              type="submit"
+              disabled={estadoMagic === "loading"}
+              className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
+            >
+              {estadoMagic === "loading" ? "Enviando..." : "Enviar link de acesso"}
+            </button>
+          </form>
+        )
+      )}
+
+      {/* Aba Senha */}
+      {aba === "senha" && (
+        <form onSubmit={handleLoginSenha} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setErroSenha("") }}
+            placeholder="seu@email.com"
+            required
+            className={inputClass}
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setErroSenha("") }}
+            placeholder="Senha"
+            required
+            className={inputClass}
+          />
+          {erroSenha && <p className="text-sm text-red-600">{erroSenha}</p>}
+          <button
+            type="submit"
+            disabled={loadingSenha}
+            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
+          >
+            {loadingSenha ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+      )}
+
+      <p className="mt-8 text-center text-xs text-gray-400">
+        Ainda não tem acesso?{" "}
+        <a href="https://cineze.com.br" className="text-blue-600 hover:underline">
+          Conheça a Cineze
+        </a>
       </p>
     </div>
   )
@@ -116,7 +196,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Suspense fallback={<div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg" />}>
+      <Suspense fallback={<div className="w-full max-w-md px-8 py-10 bg-white rounded-2xl shadow-lg" />}>
         <LoginForm />
       </Suspense>
     </main>

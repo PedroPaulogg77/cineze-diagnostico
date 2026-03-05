@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 type Estado = "carregando" | "sucesso" | "timeout" | "erro"
 
@@ -35,8 +34,6 @@ function AcessoContent() {
       return () => clearTimeout(t)
     }
 
-    const supabase = createBrowserSupabaseClient()
-
     async function verificar() {
       try {
         const res = await fetch(`/api/pagamento/status?order_nsu=${encodeURIComponent(orderNsu!)}`)
@@ -44,16 +41,6 @@ function AcessoContent() {
 
         if (data.pago && data.email) {
           limparTimers()
-
-          // Envia magic link para o email do comprador
-          await supabase.auth.signInWithOtp({
-            email: data.email,
-            options: {
-              emailRedirectTo: "https://diagnostico.cineze.com.br/onboarding",
-              shouldCreateUser: false,
-            },
-          })
-
           setEmail(data.email)
           setEstado("sucesso")
         }

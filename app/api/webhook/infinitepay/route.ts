@@ -183,8 +183,22 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  console.log(`✓ Acesso criado para ${email} | order_nsu: ${order_nsu}`)
+  // 7. Enviar magic link de acesso por email
+  const { error: magicLinkError } = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`,
+    },
+  })
 
-  // 7. Retornar 200 rapidamente para o InfinitePay não reenviar
+  if (magicLinkError) {
+    console.error("Erro ao enviar magic link:", magicLinkError)
+    // Não bloqueia — plano já foi ativado, usuário pode pedir novo link no login
+  }
+
+  console.log(`✓ Acesso criado e magic link enviado para ${email} | order_nsu: ${order_nsu}`)
+
+  // 8. Retornar 200 rapidamente para o InfinitePay não reenviar
   return NextResponse.json({ received: true, processed: true })
 }
