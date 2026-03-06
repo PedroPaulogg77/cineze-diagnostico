@@ -407,7 +407,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-avatar-initials { font-size: 13px; font-weight: 700; }
         
         /* Main Content Base (Mobile) */
-        .dl-main-content { flex: 1; overflow-y: auto; position: relative; }
+        .dl-main-content { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
         .dl-content-header { padding: 24px 16px 16px; }
         .dl-breadcrumb { display: none; }
         .dl-page-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; line-height: 1.2; }
@@ -421,7 +421,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
            border-radius: 16px;
            box-shadow: 0 4px 24px -8px rgba(0,0,0,0.1);
         }
-        .dl-content-area { padding: 0 16px 32px; margin-top: 12px; }
+        .dl-content-area { padding: 0 12px 32px; margin-top: 12px; }
+        @media (min-width: 400px) { .dl-content-area { padding: 0 16px 32px; } }
         .dl-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
         .dl-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         

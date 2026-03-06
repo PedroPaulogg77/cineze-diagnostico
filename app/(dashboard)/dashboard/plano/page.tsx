@@ -81,7 +81,7 @@ export default function PlanoPage() {
         .plano-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
         .plano-subtitle { font-size: 14px; color: var(--text-secondary); }
         
-        .plano-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .plano-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
         .plano-card-inner { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
         .plano-card-main { flex: 1; min-width: 0; width: 100%; }

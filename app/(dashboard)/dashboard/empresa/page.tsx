@@ -5,6 +5,28 @@ import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { SobreEmpresa } from "@/types"
 
+// ─── Platform Icons ───────────────────────────────────────────────────────────
+
+const PLATFORM_ICONS: [string, string][] = [
+  ["whatsapp",   "https://cdn.simpleicons.org/whatsapp/25D366"],
+  ["instagram",  "https://cdn.simpleicons.org/instagram/E4405F"],
+  ["google",     "https://cdn.simpleicons.org/google/4285F4"],
+  ["facebook",   "https://cdn.simpleicons.org/facebook/1877F2"],
+  ["linkedin",   "https://cdn.simpleicons.org/linkedin/0A66C2"],
+  ["tiktok",     "https://cdn.simpleicons.org/tiktok/010101"],
+  ["youtube",    "https://cdn.simpleicons.org/youtube/FF0000"],
+  ["twitter",    "https://cdn.simpleicons.org/x/000000"],
+  ["/x",         "https://cdn.simpleicons.org/x/000000"],
+]
+
+function getPlatformIcon(name: string): string | null {
+  const lower = name.toLowerCase()
+  for (const [key, url] of PLATFORM_ICONS) {
+    if (lower.includes(key)) return url
+  }
+  return null
+}
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 const IconCheckCircle = () => (
@@ -155,11 +177,15 @@ export default function EmpresaPage() {
         <div className="emp-grid">
           {d.canais_identificados?.map((c, i) => {
             const st = getStatusStyle(c.status)
+            const iconUrl = getPlatformIcon(c.canal)
             return (
               <div key={i} className="emp-item-card">
                 <div className="emp-item-content">
                   <div style={{ background: "var(--bg-surface)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,.02)" }}>
-                    <IconLink />
+                    {iconUrl
+                      ? <img src={iconUrl} width={18} height={18} alt={c.canal} style={{ display: "block" }} />
+                      : <IconLink />
+                    }
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px" }}>{c.canal}</p>
@@ -195,28 +221,34 @@ export default function EmpresaPage() {
             </h2>
           </div>
           <div className="emp-grid">
-            {d.canais_ausentes.map((c, i) => (
-              <div
-                key={i}
-                style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: 16,
-                  padding: "16px 20px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 16,
-                }}
-              >
-                <div style={{ background: "rgba(0,102,255,0.1)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-light)", flexShrink: 0 }}>
-                  <IconZap />
+            {d.canais_ausentes.map((c, i) => {
+              const iconUrl = getPlatformIcon(c.canal)
+              return (
+                <div
+                  key={i}
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: 16,
+                    padding: "16px 20px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 16,
+                  }}
+                >
+                  <div style={{ background: "rgba(0,102,255,0.1)", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue-light)", flexShrink: 0 }}>
+                    {iconUrl
+                      ? <img src={iconUrl} width={18} height={18} alt={c.canal} style={{ display: "block" }} />
+                      : <IconZap />
+                    }
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>{c.canal}</p>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{c.oportunidade}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>{c.canal}</p>
-                  <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{c.oportunidade}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

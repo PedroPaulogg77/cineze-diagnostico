@@ -5,6 +5,28 @@ import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { MaturidadeCanal } from "@/types"
 
+// ─── Platform Icons ───────────────────────────────────────────────────────────
+
+const PLATFORM_ICONS: [string, string][] = [
+  ["whatsapp",   "https://cdn.simpleicons.org/whatsapp/25D366"],
+  ["instagram",  "https://cdn.simpleicons.org/instagram/E4405F"],
+  ["google",     "https://cdn.simpleicons.org/google/4285F4"],
+  ["facebook",   "https://cdn.simpleicons.org/facebook/1877F2"],
+  ["linkedin",   "https://cdn.simpleicons.org/linkedin/0A66C2"],
+  ["tiktok",     "https://cdn.simpleicons.org/tiktok/010101"],
+  ["youtube",    "https://cdn.simpleicons.org/youtube/FF0000"],
+  ["twitter",    "https://cdn.simpleicons.org/x/000000"],
+  ["/x",         "https://cdn.simpleicons.org/x/000000"],
+]
+
+function getPlatformIcon(name: string): string | null {
+  const lower = name.toLowerCase()
+  for (const [key, url] of PLATFORM_ICONS) {
+    if (lower.includes(key)) return url
+  }
+  return null
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const NIVEIS = ["Inexistente", "Básico", "Intermediário", "Ativo", "Avançado"] as const
@@ -84,6 +106,7 @@ function CanalCard({ canal, animated }: { canal: MaturidadeCanal; animated: bool
   const statusBg = NIVEL_BG[canal.status] ?? "rgba(139,157,181,0.12)"
   const pct = ((canal.score ?? 0) / 10) * 100
   const { texto, passos } = getCanalTexts(canal)
+  const iconUrl = getPlatformIcon(canal.canal)
 
   return (
     <div className="dl-glass-card mat-card">
@@ -96,7 +119,10 @@ function CanalCard({ canal, animated }: { canal: MaturidadeCanal; animated: bool
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 17, fontWeight: 700, color: statusColor,
           }}>
-            {canal.canal.charAt(0).toUpperCase()}
+            {iconUrl
+              ? <img src={iconUrl} width={22} height={22} alt={canal.canal} style={{ display: "block" }} />
+              : canal.canal.charAt(0).toUpperCase()
+            }
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

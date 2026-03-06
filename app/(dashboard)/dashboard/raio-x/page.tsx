@@ -14,19 +14,25 @@ import type { Pilares, NivelDiagnostico } from "@/types"
 const C_MAIN = 2 * Math.PI * 70  // ≈ 439.8
 const C_MINI = 2 * Math.PI * 16  // ≈ 100.5
 const CSS = `
-  :root { --rx-padding: 24px; }
+  :root { --rx-padding: 20px; --rx-circle: 130px; --rx-circle-r: 55; --rx-font-score: 38px; }
   @keyframes rx-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .rx-detail-card { transition: all 0.2s ease; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .rx-detail-card { transition: all 0.2s ease; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
   .rx-detail-card:hover { transform: translateY(-2px); border-color: rgba(0, 102, 255, 0.3); box-shadow: 0 8px 24px rgba(0, 102, 255, 0.08); background: rgba(255, 255, 255, 0.04); }
-  
+
   /* Mobile First Structure */
-  .rx-score-container { display: flex; flex-direction: column; gap: 32px; align-items: center; text-align: center; }
-  .rx-chart-container { display: flex; flex-direction: column; gap: 40px; align-items: center; }
-  .rx-details-grid { display: flex; flex-direction: column; gap: 16px; }
-  
+  .rx-score-container { display: flex; flex-direction: column; gap: 24px; align-items: center; text-align: center; }
+  .rx-chart-container { display: flex; flex-direction: column; gap: 32px; align-items: center; }
+  .rx-details-grid { display: flex; flex-direction: column; gap: 14px; }
+  .rx-circle-wrap { flex-shrink: 0; position: relative; width: var(--rx-circle); height: var(--rx-circle); margin: 0 auto; }
+  .rx-score-num { font-size: var(--rx-font-score); }
+
+  @media(min-width: 480px) {
+    :root { --rx-padding: 24px; --rx-circle: 150px; --rx-circle-r: 65; --rx-font-score: 44px; }
+  }
+
   /* Desktop */
   @media(min-width: 1024px) {
-    :root { --rx-padding: 32px; }
+    :root { --rx-padding: 32px; --rx-circle: 160px; --rx-circle-r: 70; --rx-font-score: 48px; }
     .rx-score-container { flex-direction: row; gap: 48px; text-align: left; }
     .rx-chart-container { flex-direction: row; gap: 64px; }
     .rx-details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -205,7 +211,7 @@ function SkeletonLayout() {
 
         {/* Detail cards */}
         <Skel style={{ height: 22, width: "25%" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
+        <div className="rx-details-grid">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="rx-detail-card">
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -326,9 +332,9 @@ export default function RaioXPage() {
 
         {/* ── BLOCO 1: SCORE GERAL ────────────────────────────────────────── */}
         <div className="dl-glass-card rx-score-container" style={{ padding: "var(--rx-padding)" }}>
-          {/* Círculo animado */}
-          <div style={{ flexShrink: 0, position: "relative", width: 160, height: 160, margin: "0 auto" }}>
-            <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
+          {/* Círculo animado — dimensões responsivas via CSS vars */}
+          <div className="rx-circle-wrap">
+            <svg width="100%" height="100%" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
               <defs>
                 <linearGradient id="rxGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#0066FF" />
@@ -350,10 +356,10 @@ export default function RaioXPage() {
                 transform: "translate(-50%, -50%)", textAlign: "center",
               }}
             >
-              <div style={{ color: "var(--text-primary)", fontSize: 48, fontWeight: 700, lineHeight: 1 }}>
+              <div className="rx-score-num" style={{ color: "var(--text-primary)", fontWeight: 700, lineHeight: 1 }}>
                 {score_geral.toFixed(1)}
               </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>de 10</div>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 2 }}>de 10</div>
             </div>
           </div>
 
