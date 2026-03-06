@@ -199,13 +199,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Close dropdown on outside click
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handlePointerDown(e: PointerEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
       }
     }
-    document.addEventListener("click", handleClick)
-    return () => document.removeEventListener("click", handleClick)
+    document.addEventListener("pointerdown", handlePointerDown)
+    return () => document.removeEventListener("pointerdown", handlePointerDown)
   }, [])
 
   const closeSidebar = useCallback(() => {
@@ -792,7 +792,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <div
                 ref={dropdownRef}
                 className={`dl-profile${dropdownOpen ? " open" : ""}`}
-                onClick={e => { e.stopPropagation(); setDropdownOpen(v => !v) }}
+                onClick={() => setDropdownOpen(v => !v)}
               >
                 <div className="dl-avatar">
                   <span className="dl-avatar-initials">{initials}</span>
