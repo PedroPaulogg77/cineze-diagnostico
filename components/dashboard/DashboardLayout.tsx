@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -117,7 +117,6 @@ function getInitials(name: string): string {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createBrowserSupabaseClient()
   const [theme, setTheme] = useState<Theme>("light")
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -127,6 +126,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [needsDiagnostico, setNeedsDiagnostico] = useState(false)
   const [showPasswordBanner, setShowPasswordBanner] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [fromRecovery, setFromRecovery] = useState(false)
   const [pwValue, setPwValue] = useState("")
   const [pwConfirm, setPwConfirm] = useState("")
   const [pwError, setPwError] = useState("")
@@ -142,9 +142,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     setTheme(saved)
   }, [])
 
-  // Password banner / recovery modal
+  // Password banner / recovery modal — usa window.location diretamente para evitar useSearchParams
   useEffect(() => {
-    if (searchParams.get("set-password") === "1") {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("set-password") === "1") {
+      setFromRecovery(true)
       setShowPasswordModal(true)
       return
     }
@@ -208,12 +210,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false)
-    document.body.style.overflow = ""
   }, [])
 
   const openSidebar = useCallback(() => {
     setSidebarOpen(true)
-    document.body.style.overflow = "hidden"
   }, [])
 
   // Fecha sidebar em qualquer navegação (inclui botão voltar do browser)
@@ -422,8 +422,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
            box-shadow: 0 4px 24px -8px rgba(0,0,0,0.1);
         }
         .dl-content-area { padding: 0 16px 32px; margin-top: 12px; }
-        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-        .dl-overlay.active { display: block; opacity: 1; pointer-events: auto; }
+        .dl-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
+        .dl-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         
         .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
         .dl-profile.open .dl-dropdown { display: block; animation: dlFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -435,7 +435,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         /* DESKTOP SCALING (Tablets & Up) */
         @media (min-width: 768px) {
-          .dl-overlay { display: none !important; }
+          .dl-overlay { display: none; }
           .dl-sidebar {
             position: relative;
             transform: translateX(0);
@@ -505,10 +505,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             backdropFilter: "blur(20px)",
           }}>
             <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
-              {searchParams.get("set-password") === "1" ? "Defina sua senha" : "Alterar senha"}
+              {fromRecovery ? "Defina sua senha" : "Alterar senha"}
             </h2>
             <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-              {searchParams.get("set-password") === "1"
+              {fromRecovery
                 ? "Crie uma senha para entrar na plataforma diretamente."
                 : "Digite e confirme sua nova senha."}
             </p>
