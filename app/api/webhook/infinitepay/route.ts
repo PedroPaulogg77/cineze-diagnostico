@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
       {
         id: userId,
         nome_responsavel: "",
+        nome_negocio: "",
         plano_ativo: true,
         pagamento_id: transaction_nsu,
         updated_at: new Date().toISOString(),
