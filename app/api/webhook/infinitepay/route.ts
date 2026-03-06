@@ -133,11 +133,14 @@ export async function POST(request: NextRequest) {
   const supabase = createAdminSupabaseClient()
 
   // 2. Buscar email pelo order_nsu
-  const { data: pedido, error: pedidoError } = await supabase
+  type PedidoRow = { email: string; nome: string | null; phone: string | null; status: string }
+  const rawPedido = await supabase
     .from("pedidos")
     .select("email, nome, phone, status")
     .eq("order_nsu", order_nsu)
     .single()
+  const pedidoError = rawPedido.error
+  const pedido = rawPedido.data as unknown as PedidoRow | null
 
   if (pedidoError || !pedido) {
     console.error("Pedido não encontrado para order_nsu:", order_nsu, pedidoError)
