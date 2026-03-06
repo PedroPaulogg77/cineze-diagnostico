@@ -339,11 +339,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         }
 
         /* Glassmorphism Classes - MOBILE FIRST BASE */
-        .dl-sidebar { 
+        .dl-sidebar {
           position: fixed;
-          top: 0;
+          top: 64px;
           left: 0;
-          height: 100%;
+          height: calc(100% - 64px);
           width: var(--sidebar-width); 
           background-color: var(--bg-surface); 
           backdrop-filter: blur(20px);
@@ -382,16 +382,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-theme-btn:active { transform: scale(0.95); }
         .dl-theme-btn.active { background: var(--bg-surface); color: var(--blue-primary); border-color: var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         
-        .dl-main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: transparent; }
+        .dl-main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: transparent; padding-top: 64px; }
         
         /* Mobile Top Header Base */
-        .dl-top-header { 
-          height: 64px; 
-          background-color: var(--bg-surface); 
+        .dl-top-header {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          height: 64px;
+          background-color: var(--bg-surface);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border-color); 
-          display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 90;
+          border-bottom: 1px solid var(--border-color);
+          display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 400;
         }
         .dl-header-left { display: flex; align-items: center; gap: 16px; flex: 1; }
         .dl-mobile-btn { display: flex; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 12px; border-radius: 8px; margin-left: -12px;}
@@ -423,7 +425,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         }
         .dl-content-area { padding: 0 12px 32px; margin-top: 12px; }
         @media (min-width: 400px) { .dl-content-area { padding: 0 16px 32px; } }
-        .dl-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
+        .dl-overlay { position: fixed; top: 64px; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
         .dl-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         
         .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
@@ -439,9 +441,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           .dl-overlay { display: none; }
           .dl-sidebar {
             position: relative;
+            top: 0;
+            height: 100%;
             transform: translateX(0);
             box-shadow: none;
-            height: 100%;
           }
           .dl-sidebar-header { padding: 0 28px; }
           .dl-logo { font-size: 24px; }
@@ -450,7 +453,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           .dl-menu-item:hover { transform: none; }
           .dl-theme-btn:hover { transform: none; }
           
-          .dl-top-header { height: var(--header-height); padding: 0 32px; }
+          .dl-top-header { position: static; top: auto; left: auto; right: auto; height: var(--header-height); padding: 0 32px; z-index: 90; }
+          .dl-main-wrapper { padding-top: 0; }
           .dl-mobile-btn { display: none; }
           
           .dl-search, .dl-icon-btn, .dl-divider { display: flex; }
