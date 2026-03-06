@@ -114,12 +114,13 @@ export default function MercadoPage() {
     return () => { cancelled = true }
   }, [router])
 
+  const paragraphs = useMemo(() => (data?.panorama ?? "").split(/\n\n+/).filter(Boolean), [data])
+
   if (loading) return <Skeleton />
 
   const d = data!
   const im = d.investimento_midia
   const tendencia = im?.tendencia_6_meses ?? []
-  const paragraphs = useMemo(() => (d.panorama ?? "").split(/\n\n+/).filter(Boolean), [d])
 
   return (
     <>
