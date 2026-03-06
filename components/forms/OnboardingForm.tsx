@@ -76,6 +76,7 @@ const BLOCKS: Block[] = [
     id: 1, name: "O NEGÓCIO", title: "Vamos começar pelo básico.",
     subtitle: "Essas informações contextualizam todo o diagnóstico.",
     fields: [
+      { id: "b1_responsavel", type: "text", label: "Qual é o seu nome?" },
       { id: "b1_nome", type: "text", label: "Qual o nome do seu negócio?" },
       { id: "b1_tempo", type: "select", label: "Há quanto tempo ele existe?", options: ["", "Menos de 1 ano", "1 a 3 anos", "3 a 5 anos", "Mais de 5 anos"] },
       { id: "b1_resumo", type: "textarea", label: "Em uma frase: o que você faz e para quem?", hint: "Ex: Ajudo mulheres acima de 40 anos a emagrecer com acompanhamento nutricional.", max: 120 },
@@ -260,7 +261,7 @@ function buildApiPayload(data: FormFields, userEmail: string): OnboardingFormDat
   const objetivo = data.b10_objetivo as string
 
   return {
-    nome_responsavel: userEmail,
+    nome_responsavel: (data.b1_responsavel as string) || userEmail,
     nome_negocio: (data.b1_nome as string) || "",
     cidade_bairro: (data.b1_local as string) || "",
     segmento: (data.b1_resumo as string) || "",

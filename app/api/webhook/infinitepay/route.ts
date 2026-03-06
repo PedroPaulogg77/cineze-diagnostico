@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   // 2. Buscar email pelo order_nsu
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
-    .select("email, status")
+    .select("email, nome, phone, status")
     .eq("order_nsu", order_nsu)
     .single()
 
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, already_processed: true })
   }
 
-  const { email } = pedido
+  const { email, nome, phone } = pedido
 
   // 3. Atualizar status do pedido
   await supabase
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
   const { error: profileError } = await supabase
     .from("profiles")
     .upsert(
-      { id: userId, nome_responsavel: "", nome_negocio: "", plano_ativo: true, pagamento_id: transaction_nsu },
+      { id: userId, nome_responsavel: nome || "", nome_negocio: "", plano_ativo: true, pagamento_id: transaction_nsu },
       { onConflict: "id" }
     )
 
