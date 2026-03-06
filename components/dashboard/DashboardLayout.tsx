@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -117,6 +117,7 @@ function getInitials(name: string): string {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createBrowserSupabaseClient()
   const [theme, setTheme] = useState<Theme>("light")
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -124,6 +125,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [businessName, setBusinessName] = useState("Meu Negócio")
   const [initials, setInitials] = useState("ME")
   const [needsDiagnostico, setNeedsDiagnostico] = useState(false)
+  const [showPasswordBanner, setShowPasswordBanner] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pwValue, setPwValue] = useState("")
+  const [pwConfirm, setPwConfirm] = useState("")
+  const [pwError, setPwError] = useState("")
+  const [pwLoading, setPwLoading] = useState(false)
+  const [pwSuccess, setPwSuccess] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { group, label } = getActiveInfo(pathname)
@@ -132,6 +140,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = (localStorage.getItem("cineze-theme") as Theme) || "light"
     setTheme(saved)
+  }, [])
+
+  // Password banner / recovery modal
+  useEffect(() => {
+    if (searchParams.get("set-password") === "1") {
+      setShowPasswordModal(true)
+      return
+    }
+    const prompted = localStorage.getItem("cineze-pw-prompted")
+    if (!prompted) {
+      setShowPasswordBanner(true)
+    }
   }, [])
 
   // Apply theme to <html>
@@ -199,6 +219,47 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push("/login")
+  }
+
+  function openPasswordModal() {
+    setPwValue("")
+    setPwConfirm("")
+    setPwError("")
+    setPwSuccess(false)
+    setShowPasswordModal(true)
+    setDropdownOpen(false)
+  }
+
+  function dismissBanner() {
+    localStorage.setItem("cineze-pw-prompted", "1")
+    setShowPasswordBanner(false)
+  }
+
+  async function handleSetPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (pwValue.length < 6) {
+      setPwError("A senha deve ter pelo menos 6 caracteres.")
+      return
+    }
+    if (pwValue !== pwConfirm) {
+      setPwError("As senhas não coincidem.")
+      return
+    }
+    setPwError("")
+    setPwLoading(true)
+    const { error } = await supabase.auth.updateUser({ password: pwValue })
+    setPwLoading(false)
+    if (error) {
+      setPwError("Erro ao salvar senha. Tente novamente.")
+      return
+    }
+    setPwSuccess(true)
+    localStorage.setItem("cineze-pw-prompted", "1")
+    setShowPasswordBanner(false)
+    setTimeout(() => {
+      setShowPasswordModal(false)
+      setPwSuccess(false)
+    }, 2000)
   }
 
   return (
@@ -423,7 +484,129 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-content-header { min-height: 40px; }
       ` }} />
 
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 600,
+            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setShowPasswordModal(false) }}
+        >
+          <div style={{
+            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
+            borderRadius: 20, padding: "36px 32px", width: "100%", maxWidth: 400,
+            backdropFilter: "blur(20px)",
+          }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
+              {searchParams.get("set-password") === "1" ? "Defina sua senha" : "Alterar senha"}
+            </h2>
+            <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              {searchParams.get("set-password") === "1"
+                ? "Crie uma senha para entrar na plataforma diretamente."
+                : "Digite e confirme sua nova senha."}
+            </p>
+            {pwSuccess ? (
+              <p style={{ textAlign: "center", fontSize: 15, color: "#22c55e", fontWeight: 600 }}>
+                Senha salva com sucesso!
+              </p>
+            ) : (
+              <form onSubmit={handleSetPassword} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input
+                  type="password"
+                  value={pwValue}
+                  onChange={e => { setPwValue(e.target.value); setPwError("") }}
+                  placeholder="Nova senha"
+                  disabled={pwLoading}
+                  style={{
+                    width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14,
+                    border: "1px solid var(--border-color)", background: "var(--bg-surface-hover)",
+                    color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
+                  }}
+                />
+                <input
+                  type="password"
+                  value={pwConfirm}
+                  onChange={e => { setPwConfirm(e.target.value); setPwError("") }}
+                  placeholder="Confirmar senha"
+                  disabled={pwLoading}
+                  style={{
+                    width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14,
+                    border: "1px solid var(--border-color)", background: "var(--bg-surface-hover)",
+                    color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
+                  }}
+                />
+                {pwError && <p style={{ margin: 0, fontSize: 13, color: "#ef4444" }}>{pwError}</p>}
+                <button
+                  type="submit"
+                  disabled={pwLoading}
+                  style={{
+                    padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700,
+                    background: "var(--blue-primary)", color: "#fff", border: "none",
+                    cursor: pwLoading ? "not-allowed" : "pointer", opacity: pwLoading ? 0.6 : 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {pwLoading ? "Salvando..." : "Salvar senha"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  style={{
+                    padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 500,
+                    background: "transparent", color: "var(--text-secondary)",
+                    border: "1px solid var(--border-color)", cursor: "pointer",
+                  }}
+                >
+                  Cancelar
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="dl-app">
+        {/* Password banner */}
+        {showPasswordBanner && !needsDiagnostico && (
+          <div style={{
+            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+            zIndex: 400, width: "calc(100% - 48px)", maxWidth: 480,
+            background: "var(--bg-surface)", backdropFilter: "blur(20px)",
+            border: "1px solid var(--border-color)", borderRadius: 16,
+            padding: "16px 20px", display: "flex", alignItems: "center", gap: 16,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", flex: 1, lineHeight: 1.4 }}>
+              Deseja criar uma senha para acessos futuros?
+            </p>
+            <button
+              onClick={openPasswordModal}
+              style={{
+                flexShrink: 0, padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+                background: "var(--blue-primary)", color: "#fff", border: "none", cursor: "pointer",
+              }}
+            >
+              Criar senha
+            </button>
+            <button
+              onClick={dismissBanner}
+              style={{
+                flexShrink: 0, background: "none", border: "none",
+                color: "var(--text-tertiary)", cursor: "pointer", padding: 4, lineHeight: 1,
+              }}
+              aria-label="Dispensar"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Diagnostico pending overlay */}
         {needsDiagnostico && (
           <div
@@ -617,6 +800,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                 <div className="dl-dropdown">
                   <div className="dl-dropdown-sep" />
+                  <div className="dl-dropdown-item" onClick={openPasswordModal}>
+                    Alterar senha
+                  </div>
                   <div className="dl-dropdown-item" onClick={() => router.push("/onboarding")}>
                     Refazer diagnóstico
                   </div>

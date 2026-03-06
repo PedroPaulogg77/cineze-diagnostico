@@ -31,7 +31,8 @@ export async function GET(request: Request) {
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash, type })
     if (!error) {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      const dest = type === "recovery" ? "/dashboard/raio-x?set-password=1" : "/dashboard/raio-x"
+      return NextResponse.redirect(new URL(dest, request.url))
     }
     console.error("verifyOtp error:", error)
   }
