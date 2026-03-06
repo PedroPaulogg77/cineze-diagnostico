@@ -216,6 +216,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     document.body.style.overflow = "hidden"
   }, [])
 
+  // Fecha sidebar em qualquer navegação (inclui botão voltar do browser)
+  useEffect(() => {
+    closeSidebar()
+  }, [pathname, closeSidebar])
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push("/login")

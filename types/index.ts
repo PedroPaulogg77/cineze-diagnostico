@@ -54,8 +54,12 @@ export interface MaturidadeCanal {
   canal: string
   score: number
   status: StatusCanal
-  diagnostico: string
-  o_que_falta: string[]
+  // sintetizador gera esses campos:
+  o_que_esta_faltando?: string
+  proximos_passos?: string[]
+  // nomes alternativos (legado / fallback):
+  diagnostico?: string
+  o_que_falta?: string[]
 }
 
 export interface TendenciaMes {
