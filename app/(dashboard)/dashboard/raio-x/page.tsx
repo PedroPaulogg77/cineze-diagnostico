@@ -8,6 +8,7 @@ import {
   PolarRadiusAxis, ResponsiveContainer,
 } from "recharts"
 import type { Pilares, NivelDiagnostico } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -434,6 +435,12 @@ export default function RaioXPage() {
             />
           ))}
         </div>
+
+        <WhatsappCTA
+          title="Quer melhorar esses números com estratégia?"
+          message="Olá! Acabei de ver meu diagnóstico Cineze e gostaria de conversar sobre como melhorar minha presença digital."
+          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+        />
 
       </div>
     </>

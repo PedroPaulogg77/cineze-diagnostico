@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { Comunicacao, NivelProblema } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -271,6 +272,12 @@ export default function ComunicacaoPage() {
           </div>
         </div>
       )}
+
+      <WhatsappCTA
+        title="Precisa de ajuda para corrigir sua comunicação?"
+        message="Olá! Identifiquei problemas de comunicação no meu diagnóstico Cineze e gostaria de ajuda para corrigi-los."
+        subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+      />
     </div>
   )
 }

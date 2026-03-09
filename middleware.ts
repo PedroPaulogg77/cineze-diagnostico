@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Rotas que qualquer um pode acessar sem sessão
-const PUBLIC_ROUTES = ["/login", "/signup"]
+const PUBLIC_ROUTES = ["/login", "/signup", "/admin"]
 
 // Rotas de autenticação — redireciona para o dashboard se já logado
 const AUTH_ROUTES = ["/login", "/signup"]

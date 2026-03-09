@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { MaturidadeCanal } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Platform Icons ───────────────────────────────────────────────────────────
 
@@ -341,6 +342,12 @@ export default function MaturidadePage() {
             <CanalCard key={idx} canal={canal} animated={animated} />
           ))}
         </div>
+
+        <WhatsappCTA
+          title="Precisa de ajuda para evoluir esses canais?"
+          message="Olá! Vi a análise de maturidade dos meus canais no diagnóstico Cineze e quero entender como evoluí-los."
+          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+        />
 
       </div>
     </>

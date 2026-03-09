@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { ObjetivoSMART } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── SMART Config ─────────────────────────────────────────────────────────────
 
@@ -243,6 +244,12 @@ export default function ObjetivosPage() {
             )
           })}
         </div>
+
+        <WhatsappCTA
+          title="Quer acompanhar esses objetivos com um especialista?"
+          message="Olá! Tenho meus objetivos definidos no diagnóstico Cineze e gostaria de acompanhamento para atingi-los."
+          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+        />
       </div>
     </>
   )

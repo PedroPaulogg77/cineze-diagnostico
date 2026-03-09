@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { AnaliseMercado } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -369,6 +370,12 @@ export default function MercadoPage() {
             </div>
           </div>
         )}
+
+        <WhatsappCTA
+          title="Quer aproveitar a maior oportunidade do seu segmento?"
+          message="Olá! Vi a análise de mercado do meu diagnóstico Cineze e gostaria de conversar sobre como aproveitar as oportunidades identificadas."
+          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+        />
 
       </div>
     </>

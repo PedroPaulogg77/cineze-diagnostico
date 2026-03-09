@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { SobreEmpresa } from "@/types"
+import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Platform Icons ───────────────────────────────────────────────────────────
 
@@ -334,6 +335,12 @@ export default function EmpresaPage() {
           </div>
         </div>
       )}
+
+      <WhatsappCTA
+        title="Quer estruturar os canais que ainda não explorou?"
+        message="Olá! Vi que tenho canais digitais não explorados no meu diagnóstico Cineze e gostaria de entender como estruturá-los."
+        subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
+      />
     </div>
   )
 }

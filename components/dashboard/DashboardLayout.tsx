@@ -286,9 +286,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           --text-secondary: #94A3B8; 
           --text-tertiary: #64748B;
           
-          --danger: #EF4444; 
+          --danger: #EF4444;
           --shadow-dropdown: 0 20px 40px -10px rgba(0,0,0,0.5);
-          --sidebar-width: 260px; 
+          --bg-dropdown: rgb(15, 23, 42);
+          --sidebar-width: 260px;
           --header-height: 76px;
         }
         :root[data-theme="light"] {
@@ -297,6 +298,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           --bg-surface-hover: rgba(255, 255, 255, 0.8);
           --border-color: rgba(255, 255, 255, 0.4);
           --border-color-light: rgba(255, 255, 255, 0.6);
+          --bg-dropdown: rgb(241, 245, 249);
           --text-primary: #0F172A; 
           --text-secondary: #475569; 
           --text-tertiary: #94A3B8;
@@ -428,7 +430,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         .dl-overlay { position: fixed; top: 64px; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
         .dl-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         
-        .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
+        .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-dropdown); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
         .dl-profile.open .dl-dropdown { display: block; animation: dlFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes dlFadeIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .dl-dropdown-item { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s; }

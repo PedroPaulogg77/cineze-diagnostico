@@ -10,7 +10,13 @@
       "Bash(netstat -ano)",
       "Bash(npx tsx:*)",
       "Bash(npx tsc:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd:*)",
+      "Read(//e/cineze-site-feito-main/app/**)",
+      "Read(//e/cineze-site-feito-main/**)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
