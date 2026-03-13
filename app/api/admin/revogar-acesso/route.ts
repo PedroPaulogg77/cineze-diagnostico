@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server"
+import { timingSafeEqual } from "crypto"
 import { createAdminSupabaseClient } from "@/lib/supabase-server"
+
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
 
 export async function POST(request: Request) {
   // 1. Validar Authorization header
@@ -10,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "ADMIN_SECRET não configurado" }, { status: 500 })
   }
 
-  if (authHeader !== `Bearer ${adminSecret}`) {
+  if (!authHeader || !safeCompare(authHeader, `Bearer ${adminSecret}`)) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 

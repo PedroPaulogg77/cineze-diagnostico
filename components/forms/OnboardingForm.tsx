@@ -704,12 +704,13 @@ export default function OnboardingForm() {
 
     if (upsertError) console.error("onboarding_respostas upsert error:", upsertError)
 
-    // Persist form + payload to localStorage for retry resilience
-    lsSet(`cineze_form_data_${user.id}`, JSON.stringify(formData))
-    lsSet(`cineze_form_completed_${user.id}`, "true")
-    lsSet(`cineze_api_payload_${user.id}`, JSON.stringify(payload))
-
+    // Persist payload to sessionStorage for /loading page, clean up localStorage
     sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payload))
+    try {
+      localStorage.removeItem(`cineze_form_data_${user.id}`)
+      localStorage.removeItem(`cineze_form_completed_${user.id}`)
+      localStorage.removeItem(`cineze_api_payload_${user.id}`)
+    } catch { /* ignore */ }
     router.push("/loading")
   }
 

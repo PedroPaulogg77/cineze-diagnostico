@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { rateLimit } from "@/lib/rate-limit"
 
 interface InfinitePayWebhookBody {
   invoice_slug?: string
@@ -96,6 +97,12 @@ export async function POST(request: NextRequest) {
   if (!order_nsu || !transaction_nsu || !invoice_slug) {
     console.warn("Webhook InfinitePay: campos obrigatórios ausentes", body)
     return NextResponse.json({ error: "Payload incompleto" }, { status: 400 })
+  }
+
+  // Rate limiting — 5 requests / min por order_nsu
+  const rl = rateLimit(`webhook:${order_nsu}`, { maxRequests: 5, windowMs: 60 * 1000 })
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
   const handle = process.env.INFINITEPAY_HANDLE

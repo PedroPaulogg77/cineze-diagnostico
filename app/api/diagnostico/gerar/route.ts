@@ -9,6 +9,8 @@ import {
   PROMPT_AGENTE_5,
   PROMPT_SINTETIZADOR,
 } from "@/lib/agentes/prompts"
+import { onboardingFormSchema } from "@/lib/validation"
+import { rateLimit } from "@/lib/rate-limit"
 import type { OnboardingFormData, ResultadoDiagnostico } from "@/types"
 import type { Json } from "@/types/database"
 
@@ -94,7 +96,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
-  // 2. Verificar plano ativo
+  // 2. Rate limiting — 3 requests / 5 min por user
+  const rl = rateLimit(`diagnostico:${user.id}`, { maxRequests: 3, windowMs: 5 * 60 * 1000 })
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Tente novamente em alguns minutos." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    )
+  }
+
+  // 3. Verificar plano ativo
   const admin = createAdminSupabaseClient()
 
   const { data: profile } = await admin
@@ -110,10 +121,18 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 3. Parse do body
+  // 4. Parse e validação do body
   let dados: OnboardingFormData
   try {
-    dados = await request.json()
+    const raw = await request.json()
+    const result = onboardingFormSchema.safeParse(raw)
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: result.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+    dados = result.data
   } catch {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 })
   }
