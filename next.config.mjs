@@ -19,7 +19,7 @@ const nextConfig = {
                             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                             "font-src 'self' https://fonts.gstatic.com",
-                            "img-src 'self' data: https://*.supabase.co https://cineze.com.br",
+                            "img-src 'self' data: https://*.supabase.co https://cineze.com.br https://cdn.simpleicons.org",
                             "connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com",
                             "frame-ancestors 'none'",
                         ].join("; "),
