@@ -250,7 +250,7 @@ function TelaEmail({
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <div>
+        <div className="flex flex-col gap-1">
           <input
             type="email"
             placeholder="seu@email.com"
@@ -259,6 +259,7 @@ function TelaEmail({
             autoFocus
             className="w-full px-4 py-3.5 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-center text-base"
           />
+          <p className="text-[#8B9DB5] text-xs text-center mt-1">Revise seu email com atenção para não perder seu acesso.</p>
           {erroMsg && (
             <p className="text-red-400 text-sm mt-2">{erroMsg}</p>
           )}
@@ -266,9 +267,10 @@ function TelaEmail({
 
         <button
           type="submit"
-          className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-bold rounded-xl transition-all text-base tracking-wide shadow-lg shadow-cyan-500/20"
+          disabled={estado === "enviando"}
+          className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-bold rounded-xl transition-all text-base tracking-wide shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          RECEBER MEU ACESSO
+          {estado === "enviando" ? "Enviando..." : "RECEBER MEU ACESSO"}
         </button>
       </form>
 

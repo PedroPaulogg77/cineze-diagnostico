@@ -2,25 +2,24 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { createBrowserClient } from "@supabase/ssr"
 import type { Metrica, FrequenciaMetrica } from "@/types"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts"
 
 const FREQ_STYLE: Record<FrequenciaMetrica, { color: string; bg: string }> = {
-  "diária": { color: "var(--blue-light)", bg: "rgba(77, 148, 255, 0.12)" },
-  "semanal": { color: "var(--blue-primary)", bg: "rgba(0, 102, 255, 0.12)" },
-  "mensal": { color: "var(--blue-dark)", bg: "rgba(0, 71, 179, 0.12)" },
+  "diária":  { color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
+  "semanal": { color: "#3B82F6", bg: "rgba(59,130,246,0.12)" },
+  "mensal":  { color: "#8B5CF6", bg: "rgba(139,92,246,0.12)" },
 }
 
-const CHART_COLORS = ["var(--blue-primary)", "var(--blue-light)", "var(--blue-dark)", "rgba(0,102,255,0.7)", "rgba(77,148,255,0.7)", "rgba(0,71,179,0.7)"]
+const CHART_COLORS = ["#3B82F6", "#8B5CF6", "#06B7D8", "#22C55E", "#F97316", "#EAB308", "#EF4444"]
 
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px" }}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
       ` }} />
@@ -28,7 +27,7 @@ function Skeleton() {
       <div className="rx-pulse" style={{ height: 16, width: 340, borderRadius: 6, background: "var(--border-color)", marginBottom: 32 }} />
       <div className="rx-pulse" style={{ height: 220, borderRadius: 16, background: "var(--border-color)", marginBottom: 16 }} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
-        {[1, 2, 3].map(i => (
+        {[1,2,3].map(i => (
           <div key={i} className="rx-pulse" style={{ height: 140, borderRadius: 16, background: "var(--border-color)" }} />
         ))}
       </div>
@@ -71,7 +70,10 @@ export default function MetricasPage() {
   const [freqFiltro, setFreqFiltro] = useState<FrequenciaMetrica | null>(null)
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
@@ -110,54 +112,37 @@ export default function MetricasPage() {
   const freqs: FrequenciaMetrica[] = ["diária", "semanal", "mensal"]
 
   return (
-    <div className="met-container">
-      <style dangerouslySetInnerHTML={{
-        __html: `
+    <div style={{ padding: "24px 28px" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
-        .met-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
-        .met-tab:hover { opacity: .85; }
-        
-        .met-container { padding: 16px; }
-        .met-header { margin-bottom: 24px; }
-        .met-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-        .met-subtitle { font-size: 14px; color: var(--text-secondary); }
-        
-        .met-chart-card { padding: 24px; margin-bottom: 24px; }
-        .met-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        
-        .met-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        .met-card { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-        .met-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-        
-        .met-baseline-box {
-          display: flex; flex-direction: column; gap: 12px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid var(--border-color);
-          border-radius: 12px; padding: 16px;
-        }
-        .met-baseline-item { flex: 1; min-width: 0; }
-        
-        @media (min-width: 768px) {
-          .met-container { padding: 24px 28px; }
-          .met-header { margin-bottom: 32px; }
-          .met-title { font-size: 24px; }
-          
-          .met-chart-card { padding: 32px; }
-          .met-filters { gap: 12px; margin-bottom: 24px; }
-          
-          .met-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-          .met-card { padding: 24px; }
-          .met-baseline-box { flex-direction: row; align-items: center; }
-        }
+        .met-card { transition: transform .2s ease; }
+        .met-card:hover { transform: translateY(-2px); }
+        .met-tab { cursor: pointer; transition: background .15s, border-color .15s; }
       ` }} />
 
-      {/* Layout Header manages the titles now */}
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+          Métricas de Acompanhamento
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+          {list.length} indicadores para monitorar o progresso do seu diagnóstico
+        </p>
+      </div>
 
       {/* Chart card */}
       {chartData.length > 0 && (
-        <div className="dl-glass-card met-chart-card">
-          <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 24 }}>
+        <div
+          style={{
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 16,
+            padding: "22px 24px",
+            marginBottom: 20,
+          }}
+        >
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 20 }}>
             Baseline vs Meta
           </p>
           <div style={{ width: "100%", height: 200 }}>
@@ -192,21 +177,22 @@ export default function MetricasPage() {
       )}
 
       {/* Frequency filter */}
-      <div className="met-filters">
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <button
           className="met-tab"
           onClick={() => setFreqFiltro(null)}
           style={{
-            background: freqFiltro === null ? "rgba(0,102,255,0.08)" : "rgba(255,255,255,0.02)",
-            border: `1px solid ${freqFiltro === null ? "rgba(0,102,255,0.3)" : "var(--border-color)"}`,
-            borderRadius: 12, padding: "10px 20px",
-            color: freqFiltro === null ? "var(--blue-primary)" : "var(--text-secondary)",
-            fontSize: 14, fontWeight: freqFiltro === null ? 600 : 500, cursor: "pointer",
+            background: freqFiltro === null ? "rgba(6,102,255,0.15)" : "var(--bg-surface)",
+            border: `1px solid ${freqFiltro === null ? "rgba(6,102,255,0.4)" : "var(--border-color)"}`,
+            borderRadius: 10, padding: "7px 14px",
+            color: freqFiltro === null ? "#3B82F6" : "var(--text-secondary)",
+            fontSize: 13, fontWeight: freqFiltro === null ? 600 : 400, cursor: "pointer",
           }}
         >
           Todas
         </button>
         {freqs.map(f => {
+          const st = FREQ_STYLE[f]
           const isActive = freqFiltro === f
           return (
             <button
@@ -214,11 +200,11 @@ export default function MetricasPage() {
               className="met-tab"
               onClick={() => setFreqFiltro(isActive ? null : f)}
               style={{
-                background: isActive ? `rgba(0, 102, 255, 0.08)` : "rgba(255,255,255,0.02)",
-                border: `1px solid ${isActive ? "rgba(0, 102, 255, 0.3)" : "var(--border-color)"}`,
-                borderRadius: 12, padding: "10px 20px",
-                color: isActive ? "var(--blue-primary)" : "var(--text-secondary)",
-                fontSize: 14, fontWeight: isActive ? 600 : 500, cursor: "pointer",
+                background: isActive ? st.bg : "var(--bg-surface)",
+                border: `1px solid ${isActive ? st.color + "50" : "var(--border-color)"}`,
+                borderRadius: 10, padding: "7px 14px",
+                color: isActive ? st.color : "var(--text-secondary)",
+                fontSize: 13, fontWeight: isActive ? 600 : 400, cursor: "pointer",
                 textTransform: "capitalize",
               }}
             >
@@ -229,25 +215,30 @@ export default function MetricasPage() {
       </div>
 
       {/* Metrics grid */}
-      <div className="met-grid">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
         {filtered.map((m, i) => {
           const freq = FREQ_STYLE[m.frequencia] ?? { color: "#8B9DB5", bg: "rgba(139,157,181,0.1)" }
           const color = CHART_COLORS[i % CHART_COLORS.length]
+
           return (
             <div
               key={i}
-              className="dl-glass-card met-card"
+              className="met-card"
               style={{
-                borderTop: `3px solid ${color}`,
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-color)",
+                borderTop: `2px solid ${color}`,
+                borderRadius: 16,
+                padding: "18px 20px",
               }}
             >
               {/* Name + frequency */}
-              <div className="met-card-top">
-                <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4, margin: 0 }}>{m.nome}</p>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4 }}>{m.nome}</p>
                 <span style={{
-                  fontSize: 12, fontWeight: 700,
+                  fontSize: 10, fontWeight: 600,
                   color: freq.color, background: freq.bg,
-                  padding: "4px 10px", borderRadius: 9999, flexShrink: 0,
+                  padding: "3px 8px", borderRadius: 20, flexShrink: 0,
                   textTransform: "capitalize",
                 }}>
                   {m.frequencia}
@@ -255,25 +246,30 @@ export default function MetricasPage() {
               </div>
 
               {/* Baseline → Meta */}
-              <div className="met-baseline-box">
-                <div className="met-baseline-item">
-                  <p style={{ fontSize: 12, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Baseline</p>
-                  <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text-secondary)", margin: 0, lineHeight: 1 }}>{m.baseline}</p>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 10, padding: "10px 12px",
+              }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, color: "var(--text-tertiary)", marginBottom: 2 }}>Baseline</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-secondary)" }}>{m.baseline}</p>
                 </div>
-                <span style={{ fontSize: 24, color: color }}>→</span>
+                <span style={{ fontSize: 20, color: color }}>→</span>
                 <div style={{ flex: 1, textAlign: "right" }}>
-                  <p style={{ fontSize: 12, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Meta</p>
-                  <p style={{ fontSize: 20, fontWeight: 700, color, margin: 0 }}>{m.meta}</p>
+                  <p style={{ fontSize: 10, color: "var(--text-tertiary)", marginBottom: 2 }}>Meta</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color }}>{m.meta}</p>
                 </div>
               </div>
 
               {/* Como medir */}
               {m.como_medir && (
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
                     Como medir
                   </p>
-                  <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{m.como_medir}</p>
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{m.como_medir}</p>
                 </div>
               )}
             </div>

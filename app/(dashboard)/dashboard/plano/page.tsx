@@ -2,29 +2,27 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { createBrowserClient } from "@supabase/ssr"
 import type { AcaoPlano, PrioridadeAcao } from "@/types"
-import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 const PRIORIDADE_STYLE: Record<PrioridadeAcao, { color: string; bg: string; border: string }> = {
-  Alta: { color: "var(--danger)", bg: "rgba(239, 68, 68, 0.12)", border: "rgba(239, 68, 68, 0.3)" },
-  Média: { color: "#EAB308", bg: "rgba(234, 179, 8, 0.12)", border: "rgba(234, 179, 8, 0.3)" },
-  Baixa: { color: "var(--blue-primary)", bg: "rgba(0, 102, 255, 0.12)", border: "rgba(0, 102, 255, 0.3)" },
+  Alta:  { color: "#EF4444", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.3)" },
+  Média: { color: "#F97316", bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)" },
+  Baixa: { color: "#3B82F6", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)" },
 }
 
-const SEMANA_COLOR = ["var(--blue-dark)", "var(--blue-primary)", "var(--blue-light)", "var(--text-tertiary)"]
+const SEMANA_COLOR = ["#3B82F6", "#8B5CF6", "#06B7D8", "#22C55E"]
 
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px" }}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
       ` }} />
       <div className="rx-pulse" style={{ height: 28, width: 260, borderRadius: 8, background: "var(--border-color)", marginBottom: 8 }} />
       <div className="rx-pulse" style={{ height: 16, width: 340, borderRadius: 6, background: "var(--border-color)", marginBottom: 32 }} />
-      {[1, 2, 3, 4].map(i => (
+      {[1,2,3,4].map(i => (
         <div key={i} className="rx-pulse" style={{ height: 120, borderRadius: 16, background: "var(--border-color)", marginBottom: 16 }} />
       ))}
     </div>
@@ -39,7 +37,10 @@ export default function PlanoPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
@@ -69,60 +70,44 @@ export default function PlanoPage() {
   const altaCount = list.filter(a => a.prioridade === "Alta").length
 
   return (
-    <div className="plano-container">
-      <style dangerouslySetInnerHTML={{
-        __html: `
+    <div style={{ padding: "24px 28px" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
-        .plano-tab { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+        .plano-tab { cursor: pointer; transition: background .15s, border-color .15s; }
         .plano-tab:hover { opacity: .85; }
-        
-        .plano-container { padding: 16px; }
-        .plano-header { margin-bottom: 24px; }
-        .plano-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-        .plano-subtitle { font-size: 14px; color: var(--text-secondary); }
-        
-        .plano-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        
-        .plano-card-inner { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
-        .plano-card-main { flex: 1; min-width: 0; width: 100%; }
-        .plano-card-top { display: flex; align-items: flex-start; gap: 12px; width: 100%; justify-content: space-between; }
-        .plano-card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; line-height: 1.4; padding-right: 24px; }
-        
-        .plano-card-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-        
-        @media (min-width: 768px) {
-          .plano-container { padding: 24px 28px; }
-          .plano-header { margin-bottom: 32px; }
-          .plano-title { font-size: 24px; }
-          .plano-filters { gap: 12px; margin-bottom: 28px; }
-          
-          .plano-card-inner { padding: 20px 24px; flex-direction: row; align-items: flex-start; gap: 16px; }
-          .plano-card-top { justify-content: flex-start; width: auto; gap: 16px; }
-          .plano-card-title { padding-right: 0; }
-          .plano-card-tags { margin-top: 10px; gap: 10px; }
-        }
+        .plano-card { transition: box-shadow .2s ease; cursor: pointer; }
+        .plano-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,.3); }
       ` }} />
 
-      {/* Layout Header manages the titles now */}
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+          Plano de Ação
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+          Roadmap personalizado — {list.length} ações em 4 semanas, {altaCount} de alta prioridade
+        </p>
+      </div>
 
       {/* Semana filter */}
-      <div className="plano-filters">
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <button
           className="plano-tab"
           onClick={() => setSemanaAtiva(null)}
           style={{
-            background: semanaAtiva === null ? "rgba(0,102,255,0.08)" : "rgba(255,255,255,0.02)",
-            border: `1px solid ${semanaAtiva === null ? "rgba(0,102,255,0.3)" : "var(--border-color)"}`,
-            borderRadius: 12, padding: "10px 20px",
-            color: semanaAtiva === null ? "var(--blue-primary)" : "var(--text-secondary)",
-            fontSize: 14, fontWeight: semanaAtiva === null ? 600 : 500, cursor: "pointer",
+            background: semanaAtiva === null ? "rgba(6,102,255,0.15)" : "var(--bg-surface)",
+            border: `1px solid ${semanaAtiva === null ? "rgba(6,102,255,0.4)" : "var(--border-color)"}`,
+            borderRadius: 10, padding: "8px 16px",
+            color: semanaAtiva === null ? "#3B82F6" : "var(--text-secondary)",
+            fontSize: 13, fontWeight: semanaAtiva === null ? 600 : 400, cursor: "pointer",
           }}
         >
           Todas
         </button>
         {semanas.map(s => {
           const cnt = list.filter(a => a.semana === s).length
+          const c = SEMANA_COLOR[s - 1]
           const isActive = semanaAtiva === s
           return (
             <button
@@ -130,19 +115,19 @@ export default function PlanoPage() {
               className="plano-tab"
               onClick={() => setSemanaAtiva(isActive ? null : s)}
               style={{
-                background: isActive ? `rgba(0, 102, 255, 0.08)` : "rgba(255, 255, 255, 0.02)",
-                border: `1px solid ${isActive ? `rgba(0, 102, 255, 0.3)` : "var(--border-color)"}`,
-                borderRadius: 12, padding: "10px 20px",
-                color: isActive ? "var(--blue-primary)" : "var(--text-secondary)",
-                fontSize: 14, fontWeight: isActive ? 600 : 500, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 8,
+                background: isActive ? `${c}18` : "var(--bg-surface)",
+                border: `1px solid ${isActive ? `${c}50` : "var(--border-color)"}`,
+                borderRadius: 10, padding: "8px 16px",
+                color: isActive ? c : "var(--text-secondary)",
+                fontSize: 13, fontWeight: isActive ? 600 : 400, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6,
               }}
             >
               Semana {s}
               <span style={{
-                fontSize: 12, background: isActive ? `rgba(0, 102, 255, 0.15)` : "rgba(255,255,255,0.06)",
-                color: isActive ? "var(--blue-primary)" : "var(--text-tertiary)",
-                padding: "2px 8px", borderRadius: 12,
+                fontSize: 11, background: isActive ? `${c}20` : "rgba(255,255,255,0.06)",
+                color: isActive ? c : "var(--text-tertiary)",
+                padding: "1px 6px", borderRadius: 10,
               }}>
                 {cnt}
               </span>
@@ -161,89 +146,87 @@ export default function PlanoPage() {
           return (
             <div
               key={acao.numero}
-              className="dl-glass-card"
+              className="plano-card"
               onClick={() => setExpandedId(isOpen ? null : acao.numero)}
               style={{
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-color)",
                 borderLeft: `3px solid ${semColor}`,
+                borderRadius: 16,
                 overflow: "hidden",
-                cursor: "pointer",
               }}
             >
               {/* Card header */}
-              <div className="plano-card-inner">
-                {/* Number badge and Chevron top group on mobile */}
-                <div className="plano-card-top">
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: `rgba(0, 102, 255, 0.1)`,
-                    border: `1px solid rgba(0, 102, 255, 0.2)`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16, fontWeight: 700, color: semColor,
-                    flexShrink: 0,
-                  }}>
-                    {acao.numero}
-                  </div>
-                  {/* Chevron on Mobile only visible here to be on same row as number badge, hidden on desktop if preferred, but we will keep original absolute pos approach or flex row. Best approach: wrap title and tags, let chevron flow. Replacing top structure: */}
-                  <span style={{
-                    color: "var(--text-tertiary)", fontSize: 14, flexShrink: 0, marginTop: 14,
-                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform .2s ease",
-                    display: "block",
-                  }}>
-                    ▼
-                  </span>
+              <div style={{ padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 14 }}>
+                {/* Number badge */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: `${semColor}18`,
+                  border: `1px solid ${semColor}40`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 14, fontWeight: 700, color: semColor,
+                  flexShrink: 0,
+                }}>
+                  {acao.numero}
                 </div>
 
-                <div className="plano-card-main">
-                  <div>
-                    <p className="plano-card-title">{acao.titulo}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{acao.titulo}</p>
                   </div>
-                  <div className="plano-card-tags">
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={{
-                      fontSize: 12, fontWeight: 700,
+                      fontSize: 11, fontWeight: 600,
                       color: pr.color, background: pr.bg,
-                      padding: "4px 12px", borderRadius: 9999,
+                      border: `1px solid ${pr.border}`,
+                      padding: "2px 8px", borderRadius: 20,
                     }}>
                       {acao.prioridade} prioridade
                     </span>
                     <span style={{
-                      fontSize: 12, fontWeight: 600,
-                      color: semColor, background: `rgba(255, 255, 255, 0.05)`,
-                      border: `1px solid rgba(255, 255, 255, 0.1)`,
-                      padding: "4px 12px", borderRadius: 9999,
+                      fontSize: 11, fontWeight: 600,
+                      color: semColor, background: `${semColor}12`,
+                      border: `1px solid ${semColor}30`,
+                      padding: "2px 8px", borderRadius: 20,
                     }}>
                       Semana {acao.semana}
                     </span>
                   </div>
                 </div>
 
-                {/* Chevron Desktop - hidden on mobile via CSS but we handle it inline for now: Wait, earlier we put Chevron in card-top. That's fine for both. It will stack on top right on mobile, and left-align on desktop but wait, desktop we want it right aligned. Let's fix positioning. */}
-                {/* Remove this chevron if used via span in card-top */}
+                {/* Chevron */}
+                <span style={{
+                  color: "var(--text-tertiary)", fontSize: 14, flexShrink: 0, marginTop: 2,
+                  transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform .2s ease",
+                }}>
+                  ▼
+                </span>
               </div>
 
               {/* Expanded content */}
               {isOpen && (
-                <div style={{ padding: "0 24px 24px", borderTop: "1px solid var(--border-color)" }}>
-                  <div style={{ paddingTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ padding: "0 20px 20px", borderTop: "1px solid var(--border-color)" }}>
+                  <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
 
                     {/* Meta */}
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Meta</p>
-                      <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>{acao.meta}</p>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Meta</p>
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>{acao.meta}</p>
                     </div>
 
                     {/* Por que agora */}
                     {acao.por_que_agora && (
                       <div style={{
-                        background: "rgba(0,102,255,0.04)",
-                        border: "1px solid rgba(0,102,255,0.15)",
-                        borderRadius: 12, padding: "16px 20px",
-                        display: "flex", alignItems: "flex-start", gap: 12,
+                        background: "rgba(6,183,216,0.06)",
+                        border: "1px solid rgba(6,183,216,0.15)",
+                        borderRadius: 10, padding: "10px 14px",
+                        display: "flex", alignItems: "flex-start", gap: 8,
                       }}>
-                        <span style={{ fontSize: 16, flexShrink: 0, marginTop: 2 }}>⚡</span>
+                        <span style={{ fontSize: 14, flexShrink: 0 }}>⚡</span>
                         <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--blue-primary)", margin: "0 0 6px" }}>Por que agora?</p>
-                          <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{acao.por_que_agora}</p>
+                          <p style={{ fontSize: 11, fontWeight: 600, color: "#06B7D8", marginBottom: 3 }}>Por que agora?</p>
+                          <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{acao.por_que_agora}</p>
                         </div>
                       </div>
                     )}
@@ -251,23 +234,22 @@ export default function PlanoPage() {
                     {/* Passos */}
                     {acao.passos && acao.passos.length > 0 && (
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
                           Passos de execução
                         </p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {acao.passos.map((passo, pi) => (
-                            <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                            <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                               <div style={{
-                                width: 24, height: 24, borderRadius: 8,
-                                border: "1px solid var(--border-color)",
-                                background: "var(--bg-main)",
-                                flexShrink: 0, marginTop: 2,
+                                width: 20, height: 20, borderRadius: 6,
+                                border: "1.5px solid var(--border-color)",
+                                flexShrink: 0, marginTop: 1,
                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 12, fontWeight: 700, color: "var(--text-tertiary)",
+                                fontSize: 10, fontWeight: 700, color: "var(--text-tertiary)",
                               }}>
                                 {pi + 1}
                               </div>
-                              <span style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, flex: 1 }}>{passo}</span>
+                              <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{passo}</span>
                             </div>
                           ))}
                         </div>
@@ -280,12 +262,6 @@ export default function PlanoPage() {
           )
         })}
       </div>
-
-      <WhatsappCTA
-        title="Prefere executar esse plano com apoio especializado?"
-        message="Olá! Tenho meu plano de ação no diagnóstico Cineze e gostaria de ajuda para colocá-lo em prática."
-        subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
-      />
     </div>
   )
 }

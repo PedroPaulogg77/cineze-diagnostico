@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase-server"
+
+export const maxDuration = 60 // Allow up to 60s for Gemini processing on Vercel Pro
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase"
 import {
   PROMPT_AGENTE_1,
   PROMPT_AGENTE_2,
@@ -9,8 +11,6 @@ import {
   PROMPT_AGENTE_5,
   PROMPT_SINTETIZADOR,
 } from "@/lib/agentes/prompts"
-import { onboardingFormSchema } from "@/lib/validation"
-import { rateLimit } from "@/lib/rate-limit"
 import type { OnboardingFormData, ResultadoDiagnostico } from "@/types"
 import type { Json } from "@/types/database"
 
@@ -96,16 +96,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
-  // 2. Rate limiting — 3 requests / 5 min por user
-  const rl = rateLimit(`diagnostico:${user.id}`, { maxRequests: 3, windowMs: 5 * 60 * 1000 })
-  if (!rl.success) {
-    return NextResponse.json(
-      { error: "Muitas requisições. Tente novamente em alguns minutos." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
-    )
-  }
-
-  // 3. Verificar plano ativo
+  // 2. Verificar plano ativo
   const admin = createAdminSupabaseClient()
 
   const { data: profile } = await admin
@@ -121,18 +112,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 4. Parse e validação do body
+  // 3. Parse do body
   let dados: OnboardingFormData
   try {
-    const raw = await request.json()
-    const result = onboardingFormSchema.safeParse(raw)
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: result.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
-    dados = result.data
+    dados = await request.json()
   } catch {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 })
   }
@@ -167,19 +150,19 @@ export async function POST(request: NextRequest) {
   // 6. Montar mensagem para o sintetizador com todos os relatórios
   const msgSintetizador = `${dadosFormatados}
 RELATÓRIO — AGENTE 1 (Analista de Negócio):
-${agente1 ? JSON.stringify(agente1) : "Dados não disponíveis"}
+${agente1 ? JSON.stringify(agente1, null, 2) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 2 (Presença Digital):
-${agente2 ? JSON.stringify(agente2) : "Dados não disponíveis"}
+${agente2 ? JSON.stringify(agente2, null, 2) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 3 (Captação e Conversão):
-${agente3 ? JSON.stringify(agente3) : "Dados não disponíveis"}
+${agente3 ? JSON.stringify(agente3, null, 2) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 4 (Posicionamento):
-${agente4 ? JSON.stringify(agente4) : "Dados não disponíveis"}
+${agente4 ? JSON.stringify(agente4, null, 2) : "Dados não disponíveis"}
 
 RELATÓRIO — AGENTE 5 (Retenção e Crescimento):
-${agente5 ? JSON.stringify(agente5) : "Dados não disponíveis"}`
+${agente5 ? JSON.stringify(agente5, null, 2) : "Dados não disponíveis"}`
 
   // 7. Sintetizador integra tudo e gera o diagnóstico final
   const resultado = await chamarAgente<ResultadoDiagnostico>(

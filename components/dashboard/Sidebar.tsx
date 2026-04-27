@@ -8,6 +8,7 @@ const navItems = [
   { href: "/dashboard/comunicacao", label: "Comunicação", icon: "📣" },
   { href: "/dashboard/objetivos", label: "Objetivos", icon: "🎯" },
   { href: "/dashboard/plano", label: "Plano de Ação", icon: "🗺️" },
+  { href: "/dashboard/metricas", label: "Métricas", icon: "📈" },
 ]
 
 export function Sidebar() {

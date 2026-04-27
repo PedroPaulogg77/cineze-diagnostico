@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import type { OnboardingFormData } from "@/types"
+
+import { createBrowserClient } from "@supabase/ssr"
 
 const LOADING_TEXTS = [
   "Analisando a estrutura do seu negócio...",
@@ -20,105 +21,104 @@ export default function LoadingPage() {
   const [loadingText, setLoadingText] = useState(LOADING_TEXTS[0])
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState("")
-  const called = useRef(false)
-  const payloadRef = useRef<OnboardingFormData | null>(null)
-  const timersRef = useRef<{ text?: ReturnType<typeof setInterval>; progress?: ReturnType<typeof setTimeout> }>({})
+  const [retryCount, setRetryCount] = useState(0)
+  const calledForRetry = useRef(-1)
 
-  function clearTimers() {
-    clearInterval(timersRef.current.text)
-    clearTimeout(timersRef.current.progress)
-  }
-
-  const runGeneration = useCallback(async () => {
-    if (!payloadRef.current) {
-      router.replace("/onboarding")
-      return
-    }
+  useEffect(() => {
+    if (calledForRetry.current === retryCount) return
+    calledForRetry.current = retryCount
 
     setError("")
     setProgress(0)
     setLoadingText(LOADING_TEXTS[0])
 
     let textIdx = 0
-    timersRef.current.text = setInterval(() => {
+    const textInterval = setInterval(() => {
       textIdx++
       if (textIdx < LOADING_TEXTS.length) setLoadingText(LOADING_TEXTS[textIdx])
     }, 10000)
-    timersRef.current.progress = setTimeout(() => setProgress(90), 100)
 
-    try {
-      const res = await fetch("/api/diagnostico/gerar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payloadRef.current),
-      })
+    const progressTimeout = setTimeout(() => setProgress(90), 100)
 
-      clearTimers()
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
-      }
-
-      const { id } = (await res.json()) as { id: string }
-
-      setLoadingText("Diagnóstico gerado com sucesso!")
-      setProgress(100)
-      sessionStorage.removeItem("cineze_onboarding_payload")
-
-      timersRef.current.progress = setTimeout(() => {
-        router.replace(`/dashboard/raio-x?id=${id}`)
-      }, 800)
-    } catch (err) {
-      clearTimers()
-      setProgress(0)
-      const msg = err instanceof Error ? err.message : "Erro desconhecido"
-      setError(`Não foi possível gerar o diagnóstico: ${msg}`)
-    }
-  }, [router])
-
-  useEffect(() => {
-    if (called.current) return
-    called.current = true
-
-    async function init() {
-      // 1. Try sessionStorage first
-      const raw = sessionStorage.getItem("cineze_onboarding_payload")
-      if (raw) {
-        try {
-          payloadRef.current = JSON.parse(raw) as OnboardingFormData
-          runGeneration()
-          return
-        } catch {
-          // fall through to DB
-        }
-      }
-
-      // 2. Fallback: load api_payload from localStorage (persisted on form submit)
+    async function runGeneration() {
       try {
-        const supabase = createBrowserSupabaseClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const raw = localStorage.getItem(`cineze_api_payload_${user.id}`)
-          if (raw) {
-            payloadRef.current = JSON.parse(raw) as OnboardingFormData
-            sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payloadRef.current))
-            runGeneration()
-            return
+        let payload: OnboardingFormData | null = null
+        const raw = sessionStorage.getItem("cineze_onboarding_payload")
+
+        if (raw) {
+          payload = JSON.parse(raw) as OnboardingFormData
+        } else {
+          // Reconstruct from DB
+          const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+          )
+          
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) throw new Error("Usuário não autenticado")
+
+          const [{ data: profile }, { data: respostas }] = await Promise.all([
+            supabase.from("profiles").select("*").eq("id", user.id).single(),
+            supabase.from("onboarding_respostas").select("*").eq("user_id", user.id).single()
+          ])
+
+          if (!profile || !respostas) {
+            throw new Error("Respostas não encontradas. Por favor, volte ao formulário.")
+          }
+
+          payload = {
+            nome_responsavel: profile.nome_responsavel || user.email || "",
+            nome_negocio: profile.nome_negocio || "",
+            cidade_bairro: profile.cidade_bairro || "",
+            segmento: profile.segmento || "",
+            faturamento_faixa: profile.faturamento_faixa || "",
+            objetivos: respostas.objetivos || [],
+            descricao_clientes: respostas.descricao_clientes || "",
+            canais_ativos: respostas.canais_ativos || [],
+            contexto_extra: respostas.contexto_extra || ""
           }
         }
-      } catch {
-        // ignore
-      }
 
-      // 3. No data anywhere — send to onboarding
-      router.replace("/onboarding")
+        const res = await fetch("/api/diagnostico/gerar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+
+        clearInterval(textInterval)
+        clearTimeout(progressTimeout)
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error((body as { error?: string }).error ?? `A IA demorou muito a responder (Timeout ${res.status}).`)
+        }
+
+        const { id } = (await res.json()) as { id: string }
+
+        setLoadingText("Diagnóstico gerado com sucesso!")
+        setProgress(100)
+        sessionStorage.removeItem("cineze_onboarding_payload")
+
+        setTimeout(() => {
+          router.replace(`/dashboard/raio-x?id=${id}`)
+        }, 800)
+
+      } catch (err) {
+        clearInterval(textInterval)
+        clearTimeout(progressTimeout)
+        setProgress(0)
+        const msg = err instanceof Error ? err.message : "Erro desconhecido"
+        setError(`Não foi possível gerar o diagnóstico: ${msg}`)
+      }
     }
 
-    init()
+    runGeneration()
 
-    return () => clearTimers()
-  }, [router, runGeneration])
+    return () => {
+      clearInterval(textInterval)
+      clearTimeout(progressTimeout)
+    }
+  }, [router, retryCount])
 
   return (
     <div
@@ -132,24 +132,38 @@ export default function LoadingPage() {
 
       {error ? (
         <div className="max-w-sm">
-          <p className="text-[18px] font-semibold mb-4" style={{ color: "#FF4A4A" }}>
-            Ops, algo deu errado
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full border-2 border-red-500/60 flex items-center justify-center bg-red-500/5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-red-400">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+          </div>
+          <p className="text-[20px] font-bold mb-3" style={{ color: "#FFF" }}>
+            Houve uma instabilidade
           </p>
-          <p className="text-[14px] mb-6" style={{ color: "#8B9DB5" }}>{error}</p>
-          <button
-            onClick={runGeneration}
-            className="w-full px-6 py-4 rounded-xl text-base font-semibold text-white mb-3"
-            style={{ background: "linear-gradient(135deg, #0066FF, #06B7D8)" }}
-          >
-            Tentar novamente
-          </button>
-          <button
-            onClick={() => router.push("/onboarding")}
-            className="text-[14px] transition-colors"
-            style={{ color: "#8B9DB5" }}
-          >
-            Voltar ao formulário
-          </button>
+          <p className="text-[14px] mb-8 leading-relaxed" style={{ color: "#8B9DB5" }}>
+            {error} Suas respostas estão salvas, então você não precisa responder tudo de novo.
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setRetryCount(c => c + 1)}
+              className="w-full py-4 rounded-xl text-base font-bold text-gray-900 transition-transform hover:scale-[1.02] active:scale-95"
+              style={{ background: "linear-gradient(135deg, #0066FF, #06B7D8)", boxShadow: "0 4px 12px rgba(0, 102, 255, 0.2)" }}
+            >
+              TENTAR NOVAMENTE
+            </button>
+            <button
+              onClick={() => router.push("/onboarding")}
+              className="w-full py-4 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
+              style={{ color: "#8B9DB5", border: "1px solid #1A3050" }}
+            >
+              Voltar ao formulário
+            </button>
+          </div>
         </div>
       ) : (
         <>

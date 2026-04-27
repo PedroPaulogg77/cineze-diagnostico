@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { createBrowserClient } from "@supabase/ssr"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Theme = "default" | "light"
+type Theme = "default" | "dark-gray" | "light"
 
 interface NavItem {
   href: string
@@ -72,18 +72,19 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "DIAGNÓSTICO",
     items: [
-      { href: "/dashboard/raio-x", label: "Raio X do negócio", icon: IconRaiox },
-      { href: "/dashboard/maturidade", label: "Maturidade Digital", icon: IconMaturidade },
-      { href: "/dashboard/mercado", label: "Análise de mercado", icon: IconMercado },
-      { href: "/dashboard/empresa", label: "Sobre sua empresa", icon: IconEmpresa },
+      { href: "/dashboard/raio-x",      label: "Raio X do negócio",    icon: IconRaiox },
+      { href: "/dashboard/maturidade",  label: "Maturidade Digital",   icon: IconMaturidade },
+      { href: "/dashboard/mercado",     label: "Análise de mercado",   icon: IconMercado },
+      { href: "/dashboard/empresa",     label: "Sobre sua empresa",    icon: IconEmpresa },
       { href: "/dashboard/comunicacao", label: "Auditoria de comunic.", icon: IconComunicacao },
     ],
   },
   {
     label: "PLANO DE AÇÃO",
     items: [
-      { href: "/dashboard/objetivos", label: "Objetivos", icon: IconObjetivos },
-      { href: "/dashboard/plano", label: "Plano de ação", icon: IconPlano },
+      { href: "/dashboard/objetivos", label: "Objetivos",    icon: IconObjetivos },
+      { href: "/dashboard/plano",     label: "Plano de ação", icon: IconPlano },
+      { href: "/dashboard/metricas",  label: "Métricas",     icon: IconMetricas },
     ],
   },
 ]
@@ -117,21 +118,11 @@ function getInitials(name: string): string {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createBrowserSupabaseClient()
   const [theme, setTheme] = useState<Theme>("light")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [businessName, setBusinessName] = useState("Meu Negócio")
   const [initials, setInitials] = useState("ME")
-  const [needsDiagnostico, setNeedsDiagnostico] = useState(false)
-  const [showPasswordBanner, setShowPasswordBanner] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [fromRecovery, setFromRecovery] = useState(false)
-  const [pwValue, setPwValue] = useState("")
-  const [pwConfirm, setPwConfirm] = useState("")
-  const [pwError, setPwError] = useState("")
-  const [pwLoading, setPwLoading] = useState(false)
-  const [pwSuccess, setPwSuccess] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { group, label } = getActiveInfo(pathname)
@@ -140,20 +131,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = (localStorage.getItem("cineze-theme") as Theme) || "light"
     setTheme(saved)
-  }, [])
-
-  // Password banner / recovery modal — usa window.location diretamente para evitar useSearchParams
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("set-password") === "1") {
-      setFromRecovery(true)
-      setShowPasswordModal(true)
-      return
-    }
-    const prompted = localStorage.getItem("cineze-pw-prompted")
-    if (!prompted) {
-      setShowPasswordBanner(true)
-    }
   }, [])
 
   // Apply theme to <html>
@@ -166,11 +143,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem("cineze-theme", theme)
   }, [theme])
 
-  // Fetch user profile and check if a completed diagnostico exists
+  // Fetch user profile
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-
       supabase
         .from("profiles")
         .select("nome_negocio, nome_responsavel")
@@ -181,533 +161,154 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           const nameForInitials = data?.nome_negocio || data?.nome_responsavel || user.email || ""
           setInitials(getInitials(nameForInitials))
         })
-
-      // Check if user has at least one completed diagnostico
-      const { data: diag } = await supabase
-        .from("diagnosticos")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("status", "concluido")
-        .limit(1)
-        .maybeSingle()
-
-      if (!diag) {
-        setNeedsDiagnostico(true)
-      }
     })
   }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
-    function handlePointerDown(e: PointerEvent) {
+    function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
       }
     }
-    document.addEventListener("pointerdown", handlePointerDown)
-    return () => document.removeEventListener("pointerdown", handlePointerDown)
+    document.addEventListener("click", handleClick)
+    return () => document.removeEventListener("click", handleClick)
   }, [])
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false)
+    document.body.style.overflow = ""
   }, [])
 
   const openSidebar = useCallback(() => {
     setSidebarOpen(true)
+    document.body.style.overflow = "hidden"
   }, [])
 
-  // Fecha sidebar em qualquer navegação (inclui botão voltar do browser)
-  useEffect(() => {
-    closeSidebar()
-  }, [pathname, closeSidebar])
-
   async function handleSignOut() {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     await supabase.auth.signOut()
     router.push("/login")
   }
 
-  function openPasswordModal() {
-    setPwValue("")
-    setPwConfirm("")
-    setPwError("")
-    setPwSuccess(false)
-    setShowPasswordModal(true)
-    setDropdownOpen(false)
-  }
-
-  function dismissBanner() {
-    localStorage.setItem("cineze-pw-prompted", "1")
-    setShowPasswordBanner(false)
-  }
-
-  async function handleSetPassword(e: React.FormEvent) {
-    e.preventDefault()
-    if (pwValue.length < 6) {
-      setPwError("A senha deve ter pelo menos 6 caracteres.")
-      return
-    }
-    if (pwValue !== pwConfirm) {
-      setPwError("As senhas não coincidem.")
-      return
-    }
-    setPwError("")
-    setPwLoading(true)
-    const { error } = await supabase.auth.updateUser({ password: pwValue })
-    setPwLoading(false)
-    if (error) {
-      setPwError("Erro ao salvar senha. Tente novamente.")
-      return
-    }
-    setPwSuccess(true)
-    localStorage.setItem("cineze-pw-prompted", "1")
-    setShowPasswordBanner(false)
-    setTimeout(() => {
-      setShowPasswordModal(false)
-      setPwSuccess(false)
-    }, 2000)
-  }
-
   return (
     <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style dangerouslySetInnerHTML={{ __html: `
         :root {
-          --blue-primary: #0066FF;
-          --blue-light: #4D94FF;
-          --blue-dark: #0047B3;
-          --blue-transparent: rgba(0, 102, 255, 0.12);
-          
-          /* Dark Glass Theme */
-          --bg-surface: rgba(15, 23, 42, 0.6);
-          --bg-surface-hover: rgba(30, 41, 59, 0.7);
-          --border-color: rgba(255, 255, 255, 0.08);
-          --border-color-light: rgba(255, 255, 255, 0.12);
-          --text-primary: #FFFFFF; 
-          --text-secondary: #94A3B8; 
-          --text-tertiary: #64748B;
-          
-          --danger: #EF4444;
-          --shadow-dropdown: 0 20px 40px -10px rgba(0,0,0,0.5);
-          --bg-dropdown: rgb(15, 23, 42);
-          --sidebar-width: 260px;
-          --header-height: 76px;
+          --bg-main: #060D1A; --bg-surface: #080F1E; --bg-surface-hover: #0B162C;
+          --border-color: #1A3050; --border-color-light: #254067;
+          --text-primary: #FFFFFF; --text-secondary: #8B9DB5; --text-tertiary: #5C7392;
+          --blue: #0066FF; --blue-light: #3385FF; --blue-transparent: rgba(0,102,255,0.1);
+          --danger: #EF4444; --shadow-dropdown: 0 10px 25px -5px rgba(0,0,0,0.4);
+          --sidebar-width: 250px; --header-height: 72px;
+        }
+        :root[data-theme="dark-gray"] {
+          --bg-main: #0A0A0A; --bg-surface: #141414; --bg-surface-hover: #1F1F1F;
+          --border-color: #2A2A2A; --border-color-light: #3A3A3A;
+          --text-primary: #FAFAFA; --text-secondary: #A1A1AA; --text-tertiary: #71717A;
+          --blue-transparent: rgba(0,102,255,0.15); --shadow-dropdown: 0 10px 25px -5px rgba(0,0,0,0.6);
         }
         :root[data-theme="light"] {
-          /* Light Glass Theme */
-          --bg-surface: rgba(255, 255, 255, 0.6);
-          --bg-surface-hover: rgba(255, 255, 255, 0.8);
-          --border-color: rgba(255, 255, 255, 0.4);
-          --border-color-light: rgba(255, 255, 255, 0.6);
-          --bg-dropdown: rgb(241, 245, 249);
-          --text-primary: #0F172A; 
-          --text-secondary: #475569; 
-          --text-tertiary: #94A3B8;
-          --blue-transparent: rgba(0, 102, 255, 0.08);
-          --shadow-dropdown: 0 20px 40px -10px rgba(0,0,0,0.08);
+          --bg-main: #F4F5F7; --bg-surface: #FFFFFF; --bg-surface-hover: #F8F9FA;
+          --border-color: #E2E8F0; --border-color-light: #CBD5E1;
+          --text-primary: #0F172A; --text-secondary: #475569; --text-tertiary: #94A3B8;
+          --blue: #0066FF; --blue-light: #3385FF; --blue-transparent: rgba(0,102,255,0.07);
+          --danger: #EF4444; --shadow-dropdown: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
-        body { 
-          font-family: var(--font-sora), system-ui, sans-serif; 
-          color: var(--text-primary); 
-          overflow: hidden; 
-          -webkit-font-smoothing: antialiased; 
-          background: #020617; /* Fallback */
-        }
-        :root[data-theme="light"] body {
-          background: #F8FAFC;
-        }
-        /* Mesh Gradient Background */
-        .dl-app { 
-          display: flex; position: fixed; inset: 0; overflow: hidden;
-        }
-        .dl-app::before {
-          content: "";
-          position: absolute;
-          inset: -50%;
-          z-index: -1;
-          background-image: 
-            radial-gradient(circle at 15% 50%, rgba(0, 102, 255, 0.15), transparent 25%),
-            radial-gradient(circle at 85% 30%, rgba(0, 102, 255, 0.12), transparent 25%);
-          filter: blur(80px);
-          animation: meshPulse 20s ease-in-out infinite alternate;
-        }
-        :root[data-theme="light"] .dl-app::before {
-          background-image: 
-            radial-gradient(circle at 15% 50%, rgba(0, 102, 255, 0.08), transparent 25%),
-            radial-gradient(circle at 85% 30%, rgba(0, 102, 255, 0.05), transparent 25%);
-        }
-        @keyframes meshPulse {
-          0% { transform: scale(1) translate(0, 0); }
-          100% { transform: scale(1.1) translate(-2%, 2%); }
-        }
-
-        /* Glassmorphism Classes - MOBILE FIRST BASE */
-        .dl-sidebar {
-          position: fixed;
-          top: 64px;
-          left: 0;
-          height: calc(100% - 64px);
-          width: var(--sidebar-width); 
-          background-color: var(--bg-surface); 
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-right: 1px solid var(--border-color); 
-          display: flex; flex-direction: column; flex-shrink: 0; 
-          z-index: 300; 
-          transform: translateX(-100%); 
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-          box-shadow: none;
-        }
-        .dl-sidebar.open { transform: translateX(0); box-shadow: 10px 0 25px rgba(0,0,0,0.4); }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-main); color: var(--text-primary); overflow: hidden; -webkit-font-smoothing: antialiased; }
+        body, .dl-sidebar, .dl-top-header { transition: background-color 0.3s ease, border-color 0.3s ease; }
+        .dl-app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        .dl-sidebar { width: var(--sidebar-width); background-color: var(--bg-surface); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; z-index: 100; }
         .dl-sidebar-header { height: var(--header-height); display: flex; align-items: center; padding: 0 24px; }
-        .dl-logo { font-weight: 700; font-size: 22px; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
-        .dl-logo-dot { color: var(--blue-primary); }
+        .dl-logo { font-weight: 700; font-size: 20px; color: var(--text-primary); letter-spacing: -0.5px; }
+        .dl-logo-dot { color: #0066FF; }
         .dl-sidebar-content { flex: 1; overflow-y: auto; padding: 24px 16px; }
         .dl-sidebar-content::-webkit-scrollbar { width: 4px; }
         .dl-sidebar-content::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-        .dl-sidebar-group { margin-bottom: 24px; }
-        .dl-sidebar-label { color: var(--text-tertiary); font-size: 12px; font-weight: 700; margin-bottom: 16px; padding-left: 12px; text-transform: uppercase; letter-spacing: 0.1em;}
-        .dl-menu { list-style: none; padding: 0; margin: 0; }
-        .dl-menu-item { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; color: var(--text-secondary); cursor: pointer; margin-bottom: 4px; text-decoration: none; transition: all 0.2s ease; font-weight: 500; border: 1px solid transparent; }
-        .dl-menu-item:active { transform: scale(0.98); }
-        .dl-menu-item:hover { color: var(--text-primary); background-color: var(--bg-surface-hover); border-color: var(--border-color); }
-        .dl-menu-item:hover .dl-menu-icon { color: var(--text-primary); opacity: 1; transform: scale(1.05); }
-        .dl-menu-item.active { color: var(--blue-primary); background-color: var(--blue-transparent); font-weight: 600; border-color: rgba(0,102,255,0.2); box-shadow: inset 0 0 12px rgba(0,102,255,0.05); }
-        .dl-menu-item.active .dl-menu-icon { color: var(--blue-primary); opacity: 1; }
-        .dl-menu-icon { color: var(--text-secondary); opacity: 0.8; transition: all 0.2s ease; }
-        .dl-menu-text { font-size: 15px; }
-        .dl-sidebar-footer { padding: 16px; border-top: 1px solid var(--border-color); }
-        
-        /* Mobile Theme Switcher */
-        .dl-theme-switcher { display: flex; gap: 8px; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.1); padding: 6px; border-radius: 14px; border: 1px solid var(--border-color); }
-        :root[data-theme="light"] .dl-theme-switcher { background: rgba(0,0,0,0.02); }
-        .dl-theme-btn { background: transparent; border: 1px solid transparent; cursor: pointer; padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text-secondary); transition: all 0.2s; }
-        .dl-theme-btn:active { transform: scale(0.95); }
-        .dl-theme-btn.active { background: var(--bg-surface); color: var(--blue-primary); border-color: var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        
-        .dl-main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: transparent; padding-top: 64px; }
-        
-        /* Mobile Top Header Base */
-        .dl-top-header {
-          position: fixed;
-          top: 0; left: 0; right: 0;
-          height: 64px;
-          background-color: var(--bg-surface);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border-color);
-          display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 400;
-        }
+        .dl-sidebar-group { margin-bottom: 32px; }
+        .dl-sidebar-label { color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 12px; padding-left: 12px; letter-spacing: 0.5px; }
+        .dl-menu { list-style: none; }
+        .dl-menu-item { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; margin-bottom: 4px; text-decoration: none; transition: background-color 0.15s, color 0.15s; }
+        .dl-menu-item:hover { color: var(--text-primary); background-color: var(--bg-surface-hover); }
+        .dl-menu-item:hover .dl-menu-icon { color: var(--text-primary); opacity: 1; }
+        .dl-menu-item.active { color: var(--text-primary); background-color: var(--blue-transparent); font-weight: 600; }
+        .dl-menu-item.active .dl-menu-icon { color: var(--text-primary); opacity: 1; }
+        .dl-menu-item.active .dl-active-bar { transform: translateY(-50%) scaleY(1); }
+        .dl-active-bar { position: absolute; left: -16px; top: 50%; transform: translateY(-50%) scaleY(0); width: 4px; height: 20px; background-color: var(--blue); border-radius: 0 4px 4px 0; transition: transform 0.2s ease; }
+        :root[data-theme="dark-gray"] .dl-active-bar { background-color: var(--text-primary); }
+        .dl-menu-icon { color: var(--text-secondary); opacity: 0.8; transition: color 0.15s, opacity 0.15s; }
+        .dl-menu-text { font-size: 14px; font-weight: 500; }
+        .dl-sidebar-footer { padding: 16px; background-color: var(--bg-surface); }
+        .dl-theme-switcher { display: flex; gap: 8px; align-items: center; justify-content: space-between; background: var(--bg-surface-hover); padding: 6px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .dl-theme-btn { background: transparent; border: 1px solid transparent; cursor: pointer; padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text-secondary); transition: color 0.15s, background-color 0.15s; }
+        .dl-theme-btn:hover { color: var(--text-primary); }
+        .dl-theme-btn.active { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .dl-main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: var(--bg-main); }
+        .dl-top-header { height: var(--header-height); background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; flex-shrink: 0; }
         .dl-header-left { display: flex; align-items: center; gap: 16px; flex: 1; }
-        .dl-mobile-btn { display: flex; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 12px; border-radius: 8px; margin-left: -12px;}
-        .dl-mobile-btn:active { background: var(--bg-surface-hover); }
-        
-        /* Hidden on Mobile by default */
-        .dl-search, .dl-icon-btn, .dl-divider { display: none; }
-        .dl-profile .dl-business-name, .dl-profile .dl-chevron { display: none; }
-        
-        .dl-header-right { display: flex; align-items: center; gap: 12px; }
-        .dl-profile { display: flex; align-items: center; gap: 0; cursor: pointer; padding: 2px; border-radius: 12px; position: relative; background: transparent; border: none; transition: all 0.2s; }
-        .dl-avatar { width: 34px; height: 34px; border-radius: 10px; background: var(--blue-transparent); border: 1px solid rgba(0,102,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--blue-primary); }
-        .dl-avatar-initials { font-size: 13px; font-weight: 700; }
-        
-        /* Main Content Base (Mobile) */
-        .dl-main-content { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
-        .dl-content-header { padding: 24px 16px 16px; }
-        .dl-breadcrumb { display: none; }
-        .dl-page-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; line-height: 1.2; }
-        
-        /* Glass Card Utilities - Mobile Base */
-        .dl-glass-card {
-           background: var(--bg-surface);
-           backdrop-filter: blur(16px);
-           -webkit-backdrop-filter: blur(16px);
-           border: 1px solid var(--border-color);
-           border-radius: 16px;
-           box-shadow: 0 4px 24px -8px rgba(0,0,0,0.1);
-        }
-        .dl-content-area { padding: 0 12px 32px; margin-top: 12px; }
-        @media (min-width: 400px) { .dl-content-area { padding: 0 16px 32px; } }
-        .dl-overlay { position: fixed; top: 64px; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 200; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s ease; }
-        .dl-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
-        
-        .dl-dropdown { display: none; position: absolute; top: calc(100% + 12px); right: 0; background: var(--bg-dropdown); border: 1px solid var(--border-color); border-radius: 16px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
-        .dl-profile.open .dl-dropdown { display: block; animation: dlFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes dlFadeIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .dl-dropdown-item { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s; }
-        .dl-dropdown-item:active { background: var(--bg-surface-hover); color: var(--text-primary); }
+        .dl-mobile-btn { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 4px; border-radius: 6px; }
+        .dl-mobile-btn:hover { background: var(--bg-surface-hover); }
+        .dl-search { display: flex; align-items: center; width: 100%; max-width: 400px; }
+        .dl-search-icon { color: var(--text-tertiary); margin-right: 12px; flex-shrink: 0; }
+        .dl-search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 14px; font-family: inherit; }
+        .dl-search-input::placeholder { color: var(--text-tertiary); }
+        .dl-header-right { display: flex; align-items: center; gap: 16px; }
+        .dl-icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; position: relative; transition: all 0.2s; }
+        .dl-icon-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
+        .dl-badge { position: absolute; top: 4px; right: 6px; width: 6px; height: 6px; background-color: var(--danger); border-radius: 50%; }
+        .dl-divider { width: 1px; height: 24px; background-color: var(--border-color); margin: 0 8px; }
+        .dl-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 4px 8px 4px 4px; border-radius: 8px; position: relative; border: 1px solid transparent; transition: background-color 0.15s; }
+        .dl-profile:hover { background: var(--bg-surface-hover); }
+        .dl-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-surface-hover); border: 1px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dl-avatar-initials { font-size: 11px; font-weight: 600; color: var(--text-primary); }
+        .dl-business-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+        .dl-chevron { color: var(--text-tertiary); }
+        .dl-dropdown { display: none; position: absolute; top: calc(100% + 4px); right: 0; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; min-width: 220px; box-shadow: var(--shadow-dropdown); padding: 8px 0; z-index: 200; }
+        .dl-profile.open .dl-dropdown { display: block; animation: dlFadeIn 0.15s ease-out; }
+        @keyframes dlFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .dl-dropdown-item { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; }
+        .dl-dropdown-item:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
         .dl-dropdown-sep { height: 1px; background-color: var(--border-color); margin: 8px 0; }
         .dl-dropdown-danger { color: var(--danger) !important; }
-
-        /* DESKTOP SCALING (Tablets & Up) */
-        @media (min-width: 768px) {
-          .dl-overlay { display: none; }
-          .dl-sidebar {
-            position: relative;
-            top: 0;
-            height: 100%;
-            transform: translateX(0);
-            box-shadow: none;
-          }
-          .dl-sidebar-header { padding: 0 28px; }
-          .dl-logo { font-size: 24px; }
-          .dl-sidebar-content { padding: 28px 20px; }
-          .dl-menu-item { padding: 12px 14px; }
-          .dl-menu-item:hover { transform: none; }
-          .dl-theme-btn:hover { transform: none; }
-          
-          .dl-top-header { position: static; top: auto; left: auto; right: auto; height: var(--header-height); padding: 0 32px; z-index: 90; }
-          .dl-main-wrapper { padding-top: 0; }
-          .dl-mobile-btn { display: none; }
-          
-          .dl-search, .dl-icon-btn, .dl-divider { display: flex; }
-          .dl-search { align-items: center; width: 100%; max-width: 420px; background: rgba(0,0,0,0.1); padding: 12px 20px; border-radius: 16px; transition: all 0.2s; border: 1px solid var(--border-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);}
-          :root[data-theme="light"] .dl-search { background: rgba(255,255,255,0.4); }
-          .dl-search:focus-within { border-color: var(--blue-primary); background: var(--bg-surface); box-shadow: 0 0 0 3px var(--blue-transparent); }
-          .dl-search-icon { color: var(--text-tertiary); margin-right: 12px; flex-shrink: 0; }
-          .dl-search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 14px; font-family: inherit; }
-          
-          .dl-icon-btn { background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px; border-radius: 12px; }
-          .dl-icon-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); border-color: var(--border-color-light); transform: translateY(-1px); }
-          .dl-badge { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; border: 2px solid var(--border-color); }
-          .dl-divider { width: 1px; height: 32px; background-color: var(--border-color); margin: 0 8px; }
-          
-          .dl-profile { gap: 14px; padding: 6px 16px 6px 6px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border-color); }
-          .dl-profile:hover { background: var(--bg-surface-hover); border-color: var(--border-color-light); transform: translateY(-1px); }
-          .dl-profile .dl-business-name, .dl-profile .dl-chevron { display: flex; }
-          .dl-business-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-          .dl-chevron { color: var(--text-tertiary); }
-          
-          .dl-content-header { padding: 48px 40px 24px; display: flex; }
-          .dl-content-area { padding: 0 40px 40px; margin-top: 16px; }
-          .dl-glass-card { border-radius: 20px; }
-          .dl-page-title { font-size: 26px; gap: 10px; line-height: 1.3; }
-          .dl-dropdown-item:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+        .dl-dropdown-danger:hover { color: #DC2626 !important; }
+        .dl-main-content { flex: 1; overflow-y: auto; position: relative; }
+        .dl-content-header { padding: 40px 48px 24px; }
+        .dl-breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .dl-breadcrumb-item { color: var(--text-tertiary); font-size: 13px; font-weight: 500; }
+        .dl-breadcrumb-sep { color: var(--text-tertiary); display: flex; align-items: center; opacity: 0.5; }
+        .dl-breadcrumb-current { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+        .dl-page-title { font-size: 28px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.5px; }
+        .dl-content-area { padding: 0 48px 48px; }
+        .dl-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .dl-overlay.active { display: block; opacity: 1; pointer-events: auto; }
+        @media (max-width: 1024px) { .dl-content-header { padding: 32px 32px 24px; } .dl-content-area { padding: 0 32px 32px; } }
+        @media (max-width: 768px) {
+          .dl-top-header { padding: 0 16px; }
+          .dl-mobile-btn { display: flex; }
+          .dl-search, .dl-icon-btn, .dl-divider { display: none; }
+          .dl-profile .dl-business-name, .dl-profile .dl-chevron { display: none; }
+          .dl-sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 300; transform: translateX(-100%); transition: transform 0.3s ease; box-shadow: 10px 0 25px rgba(0,0,0,0.5); }
+          .dl-sidebar.open { transform: translateX(0); }
+          .dl-content-header { padding: 24px 16px 16px; }
+          .dl-content-area { padding: 0 16px 24px; }
+          .dl-page-title { font-size: 22px; }
         }
-        
-        /* LARGE DESKTOP SCALING */
-        @media (min-width: 1024px) {
-          .dl-content-header { padding: 48px 48px 24px; }
-          .dl-content-area { padding: 0 48px 48px; }
-          .dl-page-title { font-size: 28px; }
-        }
-
-        /* Prevent Text Break Layout Jumps */
-        .dl-page-title-text { white-space: normal; word-break: break-word; line-height: 1.15; }
-        .dl-content-header { min-height: 40px; }
       ` }} />
 
-      {/* Password Modal */}
-      {showPasswordModal && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 600,
-            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setShowPasswordModal(false) }}
-        >
-          <div style={{
-            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
-            borderRadius: 20, padding: "36px 32px", width: "100%", maxWidth: 400,
-            backdropFilter: "blur(20px)",
-          }}>
-            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
-              {fromRecovery ? "Defina sua senha" : "Alterar senha"}
-            </h2>
-            <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-              {fromRecovery
-                ? "Crie uma senha para entrar na plataforma diretamente."
-                : "Digite e confirme sua nova senha."}
-            </p>
-            {pwSuccess ? (
-              <p style={{ textAlign: "center", fontSize: 15, color: "#22c55e", fontWeight: 600 }}>
-                Senha salva com sucesso!
-              </p>
-            ) : (
-              <form onSubmit={handleSetPassword} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <input
-                  type="password"
-                  value={pwValue}
-                  onChange={e => { setPwValue(e.target.value); setPwError("") }}
-                  placeholder="Nova senha"
-                  disabled={pwLoading}
-                  style={{
-                    width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14,
-                    border: "1px solid var(--border-color)", background: "var(--bg-surface-hover)",
-                    color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
-                  }}
-                />
-                <input
-                  type="password"
-                  value={pwConfirm}
-                  onChange={e => { setPwConfirm(e.target.value); setPwError("") }}
-                  placeholder="Confirmar senha"
-                  disabled={pwLoading}
-                  style={{
-                    width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14,
-                    border: "1px solid var(--border-color)", background: "var(--bg-surface-hover)",
-                    color: "var(--text-primary)", outline: "none", boxSizing: "border-box",
-                  }}
-                />
-                {pwError && <p style={{ margin: 0, fontSize: 13, color: "#ef4444" }}>{pwError}</p>}
-                <button
-                  type="submit"
-                  disabled={pwLoading}
-                  style={{
-                    padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700,
-                    background: "var(--blue-primary)", color: "#fff", border: "none",
-                    cursor: pwLoading ? "not-allowed" : "pointer", opacity: pwLoading ? 0.6 : 1,
-                    marginTop: 4,
-                  }}
-                >
-                  {pwLoading ? "Salvando..." : "Salvar senha"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  style={{
-                    padding: "10px", borderRadius: 12, fontSize: 13, fontWeight: 500,
-                    background: "transparent", color: "var(--text-secondary)",
-                    border: "1px solid var(--border-color)", cursor: "pointer",
-                  }}
-                >
-                  Cancelar
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Mobile overlay */}
+      <div
+        className={`dl-overlay${sidebarOpen ? " active" : ""}`}
+        onClick={closeSidebar}
+      />
 
       <div className="dl-app">
-        {/* Password banner */}
-        {showPasswordBanner && !needsDiagnostico && (
-          <div style={{
-            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
-            zIndex: 400, width: "calc(100% - 48px)", maxWidth: 480,
-            background: "var(--bg-surface)", backdropFilter: "blur(20px)",
-            border: "1px solid var(--border-color)", borderRadius: 16,
-            padding: "16px 20px", display: "flex", alignItems: "center", gap: 16,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", flex: 1, lineHeight: 1.4 }}>
-              Deseja criar uma senha para acessos futuros?
-            </p>
-            <button
-              onClick={openPasswordModal}
-              style={{
-                flexShrink: 0, padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                background: "var(--blue-primary)", color: "#fff", border: "none", cursor: "pointer",
-              }}
-            >
-              Criar senha
-            </button>
-            <button
-              onClick={dismissBanner}
-              style={{
-                flexShrink: 0, background: "none", border: "none",
-                color: "var(--text-tertiary)", cursor: "pointer", padding: 4, lineHeight: 1,
-              }}
-              aria-label="Dispensar"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {/* Diagnostico pending overlay */}
-        {needsDiagnostico && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 500,
-              backgroundColor: "#060D1A",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              textAlign: "center",
-              fontFamily: "Inter, sans-serif",
-              color: "#FFFFFF",
-            }}
-          >
-            <div style={{ width: "100%", maxWidth: 460 }}>
-              {/* Icon */}
-              <div style={{
-                width: 64, height: 64, borderRadius: 18,
-                background: "linear-gradient(135deg, rgba(0,102,255,0.15), rgba(6,183,216,0.15))",
-                border: "1px solid rgba(6,183,216,0.3)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                margin: "0 auto 24px",
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06B7D8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-
-              <p style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8B9DB5", marginBottom: 12 }}>
-                Diagnóstico pendente
-              </p>
-              <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 12, lineHeight: 1.2 }}>
-                Suas respostas estão salvas.
-              </h1>
-              <p style={{ fontSize: 15, color: "#8B9DB5", lineHeight: 1.6, marginBottom: 32 }}>
-                Houve um problema ao gerar seu diagnóstico.<br />
-                Clique abaixo para tentar novamente — não precisará preencher nada de novo.
-              </p>
-
-              <button
-                onClick={() => router.push("/loading")}
-                style={{
-                  width: "100%",
-                  padding: "18px 24px",
-                  borderRadius: 14,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "#FFFFFF",
-                  background: "linear-gradient(135deg, #0066FF, #06B7D8)",
-                  border: "none",
-                  cursor: "pointer",
-                  marginBottom: 16,
-                }}
-              >
-                Gerar meu diagnóstico →
-              </button>
-
-              <button
-                onClick={() => router.push("/onboarding")}
-                style={{ fontSize: 14, color: "#8B9DB5", background: "none", border: "none", cursor: "pointer" }}
-              >
-                Editar respostas primeiro
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Mobile overlay */}
-        <div
-          className={`dl-overlay${sidebarOpen ? " active" : ""}`}
-          onClick={closeSidebar}
-        />
-
         {/* Sidebar */}
         <aside className={`dl-sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="dl-sidebar-header">
-            <div className="dl-logo">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-                <line x1="4" y1="22" x2="4" y2="15"></line>
-              </svg>
-              Plan<span className="dl-logo-dot">.</span>
-            </div>
+            <div className="dl-logo">cineze<span className="dl-logo-dot">.</span></div>
           </div>
 
           <div className="dl-sidebar-content">
@@ -724,6 +325,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                           className={`dl-menu-item${isActive ? " active" : ""}`}
                           onClick={() => { if (window.innerWidth <= 768) closeSidebar() }}
                         >
+                          <span className="dl-active-bar" />
                           <span className="dl-menu-icon">{item.icon}</span>
                           <span className="dl-menu-text">{item.label}</span>
                         </Link>
@@ -737,23 +339,33 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           <div className="dl-sidebar-footer">
             <div className="dl-theme-switcher">
-              {/* Default Theme */}
+              {/* Cineze Dark */}
               <button
                 className={`dl-theme-btn${theme === "default" ? " active" : ""}`}
-                title="Glass Dark"
+                title="Cineze Dark"
                 onClick={() => setTheme("default")}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              </button>
+              {/* Dark Gray */}
+              <button
+                className={`dl-theme-btn${theme === "dark-gray" ? " active" : ""}`}
+                title="Dark Gray"
+                onClick={() => setTheme("dark-gray")}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 0 20z" />
                 </svg>
               </button>
               {/* Light */}
               <button
                 className={`dl-theme-btn${theme === "light" ? " active" : ""}`}
-                title="Glass Light"
+                title="Light"
                 onClick={() => setTheme("light")}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="5" />
                   <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
                   <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
@@ -798,7 +410,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <div
                 ref={dropdownRef}
                 className={`dl-profile${dropdownOpen ? " open" : ""}`}
-                onClick={() => setDropdownOpen(v => !v)}
+                onClick={e => { e.stopPropagation(); setDropdownOpen(v => !v) }}
               >
                 <div className="dl-avatar">
                   <span className="dl-avatar-initials">{initials}</span>
@@ -812,9 +424,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                 <div className="dl-dropdown">
                   <div className="dl-dropdown-sep" />
-                  <div className="dl-dropdown-item" onClick={openPasswordModal}>
-                    Alterar senha
-                  </div>
                   <div className="dl-dropdown-item" onClick={() => router.push("/onboarding")}>
                     Refazer diagnóstico
                   </div>
@@ -829,12 +438,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Scrollable content */}
           <main className="dl-main-content">
-            <div className="dl-content-header" style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "32px 20px 0" }}>
-              <h1 className="dl-page-title">
-                <span style={{ color: "var(--text-tertiary)", fontWeight: 500 }}>{group}</span>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--blue-primary)", flexShrink: 0, marginTop: "10px" }} />
-                <span className="dl-page-title-text" style={{ paddingRight: "10px" }}>{label}</span>
-              </h1>
+            <div className="dl-content-header">
+              <div className="dl-breadcrumb">
+                <span className="dl-breadcrumb-item">{group}</span>
+                <span className="dl-breadcrumb-sep">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </span>
+                <span className="dl-breadcrumb-current">{label}</span>
+              </div>
+              <h1 className="dl-page-title">{label}</h1>
             </div>
 
             <div className="dl-content-area">

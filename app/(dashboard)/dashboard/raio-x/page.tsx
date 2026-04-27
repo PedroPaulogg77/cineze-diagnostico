@@ -2,47 +2,23 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { createBrowserClient } from "@supabase/ssr"
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ResponsiveContainer,
 } from "recharts"
 import type { Pilares, NivelDiagnostico } from "@/types"
-import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const C_MAIN = 2 * Math.PI * 70  // ≈ 439.8
 const C_MINI = 2 * Math.PI * 16  // ≈ 100.5
-const CSS = `
-  :root { --rx-padding: 20px; --rx-circle: 130px; --rx-circle-r: 55; --rx-font-score: 38px; }
-  @keyframes rx-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .rx-detail-card { transition: all 0.2s ease; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-  .rx-detail-card:hover { transform: translateY(-2px); border-color: rgba(0, 102, 255, 0.3); box-shadow: 0 8px 24px rgba(0, 102, 255, 0.08); background: rgba(255, 255, 255, 0.04); }
-
-  /* Mobile First Structure */
-  .rx-score-container { display: flex; flex-direction: column; gap: 24px; align-items: center; text-align: center; }
-  .rx-chart-container { display: flex; flex-direction: column; gap: 32px; align-items: center; }
-  .rx-details-grid { display: flex; flex-direction: column; gap: 14px; }
-  .rx-circle-wrap { flex-shrink: 0; position: relative; width: var(--rx-circle); height: var(--rx-circle); margin: 0 auto; }
-  .rx-score-num { font-size: var(--rx-font-score); }
-
-  @media(min-width: 480px) {
-    :root { --rx-padding: 24px; --rx-circle: 150px; --rx-circle-r: 65; --rx-font-score: 44px; }
-  }
-
-  /* Desktop */
-  @media(min-width: 1024px) {
-    :root { --rx-padding: 32px; --rx-circle: 160px; --rx-circle-r: 70; --rx-font-score: 48px; }
-    .rx-score-container { flex-direction: row; gap: 48px; text-align: left; }
-    .rx-chart-container { flex-direction: row; gap: 64px; }
-    .rx-details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-  }
-`
+const CSS = `@keyframes rx-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PageData {
+  pendente?: boolean
   score_geral: number
   nivel: NivelDiagnostico
   resumo_executivo: string
@@ -56,20 +32,21 @@ interface PageData {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function scoreColor(s: number): string {
-  if (s < 4) return "var(--danger)"
-  if (s < 7) return "#EAB308"
-  return "var(--blue-primary)"
+  if (s < 4) return "#EF4444"
+  if (s < 6) return "#F97316"
+  if (s < 8) return "#EAB308"
+  return "#3B82F6"
 }
 
 function badgeColors(nivel: NivelDiagnostico): { color: string; bg: string } {
   const map: Record<string, { color: string; bg: string }> = {
-    "Presença Crítica": { color: "var(--danger)", bg: "rgba(239, 68, 68, 0.12)" },
-    "Em Construção": { color: "#EAB308", bg: "rgba(234, 179, 8, 0.12)" },
-    "Em Crescimento": { color: "var(--blue-primary)", bg: "rgba(0, 102, 255, 0.12)" },
-    "Presença Sólida": { color: "var(--blue-primary)", bg: "rgba(0, 102, 255, 0.12)" },
-    "Referência na região": { color: "var(--blue-primary)", bg: "rgba(0, 102, 255, 0.12)" },
+    "Presença Crítica":     { color: "#EF4444", bg: "rgba(239,68,68,0.15)" },
+    "Em Construção":        { color: "#F97316", bg: "rgba(249,115,22,0.15)" },
+    "Em Crescimento":       { color: "#EAB308", bg: "rgba(234,179,8,0.15)" },
+    "Presença Sólida":      { color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
+    "Referência na região": { color: "#22C55E", bg: "rgba(34,197,94,0.15)" },
   }
-  return map[nivel] ?? { color: "#EAB308", bg: "rgba(234, 179, 8, 0.12)" }
+  return map[nivel] ?? { color: "#EAB308", bg: "rgba(234,179,8,0.15)" }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -110,15 +87,15 @@ function PillarRow({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>{label}</span>
-        <span style={{ color, fontSize: 14, fontWeight: 700 }}>{score.toFixed(1)} <span style={{ color: "var(--text-tertiary)", fontWeight: 500 }}>/ 10</span></span>
+        <span style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 500 }}>{label}</span>
+        <span style={{ color, fontSize: 14, fontWeight: 600 }}>{score.toFixed(1)} / 10</span>
       </div>
-      <div style={{ height: 6, background: "var(--bg-main)", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: 6, background: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
         <div
           style={{
             height: "100%", borderRadius: 3, background: color,
             width: animated ? `${score * 10}%` : "0%",
-            transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+            transition: "width 1s ease-in-out",
           }}
         />
       </div>
@@ -132,8 +109,11 @@ function DetailCard({
   const color = scoreColor(score)
   return (
     <div
-      className="rx-detail-card"
-      style={{ borderLeft: `6px solid ${color}` }}
+      style={{
+        background: "var(--bg-surface)", borderRadius: 12, padding: 24,
+        border: "1px solid var(--border-color)", borderLeft: `4px solid ${color}`,
+        display: "flex", flexDirection: "column", gap: 16,
+      }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <MiniArc score={score} />
@@ -180,7 +160,7 @@ function SkeletonLayout() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {/* Score card */}
-        <div className="dl-glass-card" style={{ padding: "32px", display: "flex", gap: 40, alignItems: "center" }}>
+        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 32, display: "flex", gap: 40, alignItems: "center" }}>
           <Skel style={{ width: 160, height: 160, borderRadius: "50%", flexShrink: 0 }} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
             <Skel style={{ height: 14, width: "40%" }} />
@@ -192,7 +172,7 @@ function SkeletonLayout() {
         </div>
 
         {/* Analysis card */}
-        <div className="dl-glass-card" style={{ padding: "32px" }}>
+        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 32 }}>
           <Skel style={{ height: 22, width: "20%", marginBottom: 24 }} />
           <div style={{ display: "flex", gap: 40 }}>
             <Skel style={{ flex: 1, height: 240, borderRadius: 12 }} />
@@ -212,9 +192,9 @@ function SkeletonLayout() {
 
         {/* Detail cards */}
         <Skel style={{ height: 22, width: "25%" }} />
-        <div className="rx-details-grid">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className="rx-detail-card">
+            <div key={i} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <Skel style={{ width: 40, height: 40, borderRadius: "50%" }} />
                 <Skel style={{ height: 16, width: "50%" }} />
@@ -234,9 +214,9 @@ function SkeletonLayout() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const CHART_COLORS: Record<string, { grid: string; tick: string }> = {
-  "default": { grid: "#1A3050", tick: "#8B9DB5" },
+  "default":   { grid: "#1A3050", tick: "#8B9DB5" },
   "dark-gray": { grid: "#2A2A2A", tick: "#A1A1AA" },
-  "light": { grid: "#E5E7EB", tick: "#9CA3AF" },
+  "light":     { grid: "#E2E8F0", tick: "#475569" },
 }
 
 export default function RaioXPage() {
@@ -259,10 +239,19 @@ export default function RaioXPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createBrowserSupabaseClient()
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completo")
+        .eq("id", user.id)
+        .single()
 
       const { data: diag } = await supabase
         .from("diagnosticos")
@@ -273,17 +262,31 @@ export default function RaioXPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!diag?.raio_x) { router.replace("/onboarding"); return }
+      if (!diag?.raio_x) { 
+        if (profile?.onboarding_completo) {
+          // Answers exist, but no report
+          setPageData({
+            pendente: true,
+            score_geral: 0, nivel: "Em Construção", resumo_executivo: "",
+            score_visibilidade: 0, score_captacao: 0, score_conversao: 0, score_posicionamento: 0,
+            pilares: {} as Pilares,
+          })
+          setLoading(false)
+          return
+        }
+        router.replace("/onboarding")
+        return 
+      }
 
       setPageData({
-        score_geral: diag.score_geral ?? 0,
-        nivel: (diag.nivel ?? "Em Construção") as NivelDiagnostico,
-        resumo_executivo: diag.resumo_executivo ?? "",
-        score_visibilidade: diag.score_visibilidade ?? 0,
-        score_captacao: diag.score_captacao ?? 0,
-        score_conversao: diag.score_conversao ?? 0,
+        score_geral:          diag.score_geral ?? 0,
+        nivel:                (diag.nivel ?? "Em Construção") as NivelDiagnostico,
+        resumo_executivo:     diag.resumo_executivo ?? "",
+        score_visibilidade:   diag.score_visibilidade ?? 0,
+        score_captacao:       diag.score_captacao ?? 0,
+        score_conversao:      diag.score_conversao ?? 0,
         score_posicionamento: diag.score_posicionamento ?? 0,
-        pilares: diag.raio_x as unknown as Pilares,
+        pilares:              diag.raio_x as unknown as Pilares,
       })
       setLoading(false)
       setTimeout(() => setAnimated(true), 100)
@@ -295,6 +298,45 @@ export default function RaioXPage() {
   if (loading) return <SkeletonLayout />
   if (!pageData) return null
 
+  // UI if pending report
+  if (pageData.pendente) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "64px 24px", textAlign: "center", background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16 }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6,183,216,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#06B7D8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>Relatório Pendente</h2>
+        <p style={{ fontSize: 16, color: "var(--text-secondary)", maxWidth: 400, marginBottom: 32 }}>
+          Suas respostas foram salvas com sucesso, mas o diagnóstico ainda não foi gerado pela IA.
+        </p>
+        <button
+          onClick={() => router.push("/loading")}
+          style={{
+            background: "linear-gradient(135deg, #0066FF, #06B7D8)",
+            color: "#FFF",
+            fontSize: 16,
+            fontWeight: 600,
+            padding: "16px 32px",
+            border: "none",
+            borderRadius: 12,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0, 102, 255, 0.2)",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease"
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 102, 255, 0.3)" }}
+          onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 102, 255, 0.2)" }}
+        >
+          Gerar Diagnóstico Agora
+        </button>
+      </div>
+    )
+  }
+
   const {
     score_geral, nivel, resumo_executivo,
     score_visibilidade, score_captacao, score_conversao, score_posicionamento,
@@ -305,23 +347,23 @@ export default function RaioXPage() {
   const mainOffset = C_MAIN * (1 - score_geral / 10)
 
   const radarData = [
-    { subject: "Visibilidade", score: score_visibilidade, fullMark: 10 },
-    { subject: "Captação", score: score_captacao, fullMark: 10 },
-    { subject: "Conversão", score: score_conversao, fullMark: 10 },
+    { subject: "Visibilidade",   score: score_visibilidade,   fullMark: 10 },
+    { subject: "Captação",       score: score_captacao,       fullMark: 10 },
+    { subject: "Conversão",      score: score_conversao,      fullMark: 10 },
     { subject: "Posicionamento", score: score_posicionamento, fullMark: 10 },
   ]
 
   const pillarRows = [
-    { label: "Visibilidade", score: score_visibilidade },
-    { label: "Captação", score: score_captacao },
-    { label: "Conversão", score: score_conversao },
+    { label: "Visibilidade",   score: score_visibilidade },
+    { label: "Captação",       score: score_captacao },
+    { label: "Conversão",      score: score_conversao },
     { label: "Posicionamento", score: score_posicionamento },
   ]
 
   const details = [
-    { label: "Visibilidade", score: score_visibilidade, pilar: pilares?.visibilidade },
-    { label: "Captação", score: score_captacao, pilar: pilares?.captacao },
-    { label: "Conversão", score: score_conversao, pilar: pilares?.conversao },
+    { label: "Visibilidade",   score: score_visibilidade,   pilar: pilares?.visibilidade },
+    { label: "Captação",       score: score_captacao,       pilar: pilares?.captacao },
+    { label: "Conversão",      score: score_conversao,      pilar: pilares?.conversao },
     { label: "Posicionamento", score: score_posicionamento, pilar: pilares?.posicionamento },
   ]
 
@@ -332,17 +374,22 @@ export default function RaioXPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
         {/* ── BLOCO 1: SCORE GERAL ────────────────────────────────────────── */}
-        <div className="dl-glass-card rx-score-container" style={{ padding: "var(--rx-padding)" }}>
-          {/* Círculo animado — dimensões responsivas via CSS vars */}
-          <div className="rx-circle-wrap">
-            <svg width="100%" height="100%" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
+        <div
+          style={{
+            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
+            borderRadius: 16, padding: 32, display: "flex", gap: 40, alignItems: "center",
+          }}
+        >
+          {/* Círculo animado */}
+          <div style={{ flexShrink: 0, position: "relative", width: 160, height: 160 }}>
+            <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
               <defs>
                 <linearGradient id="rxGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#0066FF" />
-                  <stop offset="100%" stopColor="#2563EB" />
+                  <stop offset="100%" stopColor="#06B7D8" />
                 </linearGradient>
               </defs>
-              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bg-main)" strokeWidth="12" />
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--border-color)" strokeWidth="12" />
               <circle
                 cx="80" cy="80" r="70" fill="none"
                 stroke="url(#rxGrad)" strokeWidth="12" strokeLinecap="round"
@@ -357,10 +404,10 @@ export default function RaioXPage() {
                 transform: "translate(-50%, -50%)", textAlign: "center",
               }}
             >
-              <div className="rx-score-num" style={{ color: "var(--text-primary)", fontWeight: 700, lineHeight: 1 }}>
+              <div style={{ color: "var(--text-primary)", fontSize: 48, fontWeight: 700, lineHeight: 1 }}>
                 {score_geral.toFixed(1)}
               </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 2 }}>de 10</div>
+              <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>de 10</div>
             </div>
           </div>
 
@@ -368,19 +415,18 @@ export default function RaioXPage() {
           <div style={{ flex: 1 }}>
             <span
               style={{
-                display: "block", color: "var(--text-tertiary)", fontSize: 12,
-                textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px", marginBottom: 16,
+                display: "block", color: "var(--text-secondary)", fontSize: 13,
+                textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px", marginBottom: 12,
               }}
             >
               Índice geral de presença digital
             </span>
             <span
               style={{
-                display: "inline-flex", alignItems: "center", background: badge.bg, color: badge.color,
-                padding: "6px 14px", borderRadius: 9999, fontSize: 13, fontWeight: 700, marginBottom: 24,
+                display: "inline-block", background: badge.bg, color: badge.color,
+                padding: "6px 12px", borderRadius: 20, fontSize: 13, fontWeight: 600, marginBottom: 24,
               }}
             >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: badge.color, marginRight: 8 }} />
               {nivel}
             </span>
             <p style={{ color: "var(--text-primary)", fontSize: 15, lineHeight: 1.6, margin: 0 }}>
@@ -390,17 +436,22 @@ export default function RaioXPage() {
         </div>
 
         {/* ── BLOCO 2: RADAR + BARRAS ─────────────────────────────────────── */}
-        <div className="dl-glass-card" style={{ padding: "var(--rx-padding)" }}>
-          <h2 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700, margin: "0 0 32px" }}>
+        <div
+          style={{
+            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
+            borderRadius: 16, padding: 32,
+          }}
+        >
+          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "0 0 24px" }}>
             Análise por pilar
           </h2>
-          <div className="rx-chart-container">
+          <div style={{ display: "flex", gap: 40, alignItems: "center" }}>
             {/* Radar Chart */}
-            <div style={{ flex: 1, minHeight: 280, width: "100%" }}>
-              <ResponsiveContainer width="100%" height={280}>
+            <div style={{ flex: 1 }}>
+              <ResponsiveContainer width="100%" height={240}>
                 <RadarChart data={radarData}>
                   <PolarGrid stroke={chartColors.grid} />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: chartColors.tick, fontSize: 12, fontWeight: 500 }} />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: chartColors.tick, fontSize: 12 }} />
                   <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
                   <Radar
                     name="Score" dataKey="score"
@@ -411,7 +462,7 @@ export default function RaioXPage() {
             </div>
 
             {/* Barras dos pilares */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
               {pillarRows.map(p => (
                 <PillarRow key={p.label} label={p.label} score={p.score} animated={animated} />
               ))}
@@ -420,11 +471,11 @@ export default function RaioXPage() {
         </div>
 
         {/* ── BLOCO 3: DIAGNÓSTICO DETALHADO ──────────────────────────────── */}
-        <h2 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700, margin: "16px 0 0" }}>
+        <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "8px 0 0" }}>
           Diagnóstico detalhado
         </h2>
 
-        <div className="rx-details-grid">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
           {details.map(d => (
             <DetailCard
               key={d.label}
@@ -435,12 +486,6 @@ export default function RaioXPage() {
             />
           ))}
         </div>
-
-        <WhatsappCTA
-          title="Quer melhorar esses números com estratégia?"
-          message="Olá! Acabei de ver meu diagnóstico Cineze e gostaria de conversar sobre como melhorar minha presença digital."
-          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
-        />
 
       </div>
     </>

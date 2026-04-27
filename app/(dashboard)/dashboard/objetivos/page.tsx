@@ -2,51 +2,61 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { createBrowserClient } from "@supabase/ssr"
 import type { ObjetivoSMART } from "@/types"
-import WhatsappCTA from "@/components/dashboard/WhatsappCTA"
-
-// ─── SMART Config ─────────────────────────────────────────────────────────────
-
-const SMART = [
-  { key: "especifico" as const, letra: "E", label: "Específico", color: "#0066FF", bg: "rgba(0,102,255,0.08)" },
-  { key: "mensuravel" as const, letra: "M", label: "Mensurável", color: "#06B7D8", bg: "rgba(6,183,216,0.08)" },
-  { key: "atingivel"  as const, letra: "A", label: "Atingível",  color: "#22C55E", bg: "rgba(34,197,94,0.08)"  },
-  { key: "relevante"  as const, letra: "R", label: "Relevante",  color: "#EAB308", bg: "rgba(234,179,8,0.08)"  },
-  { key: "temporal"   as const, letra: "T", label: "Temporal",   color: "#F97316", bg: "rgba(249,115,22,0.08)" },
-]
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function ChevronIcon({ up, color }: { up: boolean; color: string }) {
-  return (
-    <svg
-      width="16" height="16" viewBox="0 0 24 24" fill="none"
-      stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-      style={{ flexShrink: 0, transition: "transform 300ms ease", transform: up ? "rotate(180deg)" : "rotate(0deg)" }}
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  )
-}
+const IconTarget = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+)
+const IconBarChart = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+  </svg>
+)
+const IconTrendingUp = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+  </svg>
+)
+const IconStar = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+)
+const IconClock = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+)
+
+// ─── SMART Items ──────────────────────────────────────────────────────────────
+
+const SMART_ITEMS = [
+  { key: "especifico" as const, label: "Específico", icon: <IconTarget />,    color: "#3B82F6" },
+  { key: "mensuravel" as const, label: "Mensurável", icon: <IconBarChart />,  color: "#8B5CF6" },
+  { key: "atingivel"  as const, label: "Atingível",  icon: <IconTrendingUp />,color: "#22C55E" },
+  { key: "relevante"  as const, label: "Relevante",  icon: <IconStar />,      color: "#EAB308" },
+  { key: "temporal"   as const, label: "Temporal",   icon: <IconClock />,     color: "#06B7D8" },
+]
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
     <div style={{ padding: "24px 28px" }}>
-      <div className="obj-sk" style={{ height: 28, width: 180, borderRadius: 8, marginBottom: 8 }} />
-      <div className="obj-sk" style={{ height: 16, width: 320, borderRadius: 6, marginBottom: 10 }} />
-      <div className="obj-sk" style={{ height: 30, width: 190, borderRadius: 9999, marginBottom: 28 }} />
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="obj-sk" style={{
-            height: 72, borderRadius: 16,
-            borderLeft: "4px solid var(--border-color)",
-          }} />
-        ))}
-      </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+      ` }} />
+      <div className="rx-pulse" style={{ height: 28, width: 260, borderRadius: 8, background: "var(--border-color)", marginBottom: 8 }} />
+      <div className="rx-pulse" style={{ height: 16, width: 340, borderRadius: 6, background: "var(--border-color)", marginBottom: 32 }} />
+      {[1,2,3].map(i => (
+        <div key={i} className="rx-pulse" style={{ height: 180, borderRadius: 16, background: "var(--border-color)", marginBottom: 16 }} />
+      ))}
     </div>
   )
 }
@@ -57,14 +67,15 @@ export default function ObjetivosPage() {
   const router = useRouter()
   const [objetivos, setObjetivos] = useState<ObjetivoSMART[] | null>(null)
   const [loading, setLoading] = useState(true)
-  const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<number>(0)
 
   useEffect(() => {
-    let cancelled = false
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (cancelled) return
       if (!user) { router.replace("/login"); return }
 
       const { data: row } = await supabase
@@ -76,181 +87,148 @@ export default function ObjetivosPage() {
         .limit(1)
         .maybeSingle()
 
-      if (cancelled) return
       if (!row) { router.replace("/onboarding"); return }
 
       setObjetivos(row.objetivos_smart as unknown as ObjetivoSMART[])
       setLoading(false)
     }
     load()
-    return () => { cancelled = true }
   }, [router])
 
   if (loading) return <Skeleton />
 
   const list = objetivos ?? []
 
-  function toggle(i: number) {
-    setOpenIdx(prev => (prev === i ? null : i))
-  }
-
   return (
-    <>
+    <div style={{ padding: "24px 28px" }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes obj-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-        .obj-page { padding: 16px; }
-        @media (min-width: 768px) { .obj-page { padding: 24px 28px; } }
-
-        .obj-card {
-          background: var(--bg-surface);
-          border: 1px solid var(--border-color);
-          border-left: 4px solid #0066FF;
-          border-radius: 16px;
-          overflow: hidden;
-          transition: background 200ms;
-        }
-        .obj-card.is-open { background: var(--bg-surface-hover); }
-
-        .obj-card-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 20px 24px;
-          cursor: pointer;
-          user-select: none;
-        }
-        .obj-card-header:hover { background: var(--bg-surface-hover); }
-
-        .obj-expand {
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 300ms ease;
-        }
-        .obj-expand.is-open { max-height: 2000px; }
-
-        .obj-separator { height: 1px; background: var(--border-color); margin: 0 24px; }
-        .obj-smart-sep { height: 1px; background: var(--border-color); }
+        @keyframes rx-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .rx-pulse { animation: rx-pulse 1.6s ease-in-out infinite; }
+        .obj-tab { cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+        .obj-tab:hover { background: var(--bg-surface-hover) !important; }
       ` }} />
 
-      <div className="obj-page">
-
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
-          Objetivos
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+          Objetivos SMART
         </h1>
-        <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: "0 0 12px" }}>
-          5 objetivos concretos definidos com base no seu diagnóstico.
+        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+          Metas estruturadas com critérios mensuráveis para guiar seu crescimento
         </p>
-        <span style={{
-          display: "inline-flex", alignItems: "center",
-          background: "rgba(0,102,255,0.08)", border: "1px solid #0066FF",
-          color: "#0066FF", fontSize: 13, fontWeight: 600,
-          padding: "6px 16px", borderRadius: 9999, marginBottom: 24,
-        }}>
-          {list.length} objetivo{list.length !== 1 ? "s" : ""} identificado{list.length !== 1 ? "s" : ""}
-        </span>
-
-        {/* ── Cards ──────────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {list.map((obj, i) => {
-            const isOpen = openIdx === i
-            const numero = obj.numero ?? i + 1
-            const metaText = obj.meta_resumida ?? obj.meta ?? ""
-
-            return (
-              <div key={i} className={`obj-card${isOpen ? " is-open" : ""}`}>
-
-                {/* Card header */}
-                <div className="obj-card-header" onClick={() => toggle(i)}>
-
-                  {/* Left: number badge + text */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: "#0066FF", flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 14, fontWeight: 700, color: "#FFFFFF",
-                    }}>
-                      {numero}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.4 }}>
-                        {obj.titulo}
-                      </p>
-                      {metaText && (
-                        <p style={{
-                          fontSize: 14, color: "var(--text-secondary)", margin: "2px 0 0", lineHeight: 1.4,
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}>
-                          {metaText}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right: label + chevron */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: isOpen ? "var(--text-secondary)" : "#0066FF" }}>
-                      {isOpen ? "Fechar" : "Ver detalhes"}
-                    </span>
-                    <ChevronIcon up={isOpen} color={isOpen ? "var(--text-tertiary)" : "#0066FF"} />
-                  </div>
-                </div>
-
-                {/* Expandable content */}
-                <div className={`obj-expand${isOpen ? " is-open" : ""}`}>
-                  <div className="obj-separator" />
-
-                  <div style={{ padding: "4px 24px 24px" }}>
-                    {SMART.map((s, si) => {
-                      const text = obj[s.key]
-                      return (
-                        <div key={s.key}>
-                          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "16px 0" }}>
-                            {/* Letter badge */}
-                            <div style={{
-                              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                              background: s.bg,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 14, fontWeight: 700, color: s.color,
-                            }}>
-                              {s.letra}
-                            </div>
-
-                            {/* Label + text */}
-                            <div style={{ flex: 1 }}>
-                              <p style={{
-                                fontSize: 11, fontWeight: 700, color: s.color,
-                                textTransform: "uppercase", letterSpacing: "0.08em",
-                                margin: "0 0 4px",
-                              }}>
-                                {s.label}
-                              </p>
-                              <p style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, margin: 0 }}>
-                                {text || "—"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {si < SMART.length - 1 && <div className="obj-smart-sep" />}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        <WhatsappCTA
-          title="Quer acompanhar esses objetivos com um especialista?"
-          message="Olá! Tenho meus objetivos definidos no diagnóstico Cineze e gostaria de acompanhamento para atingi-los."
-          subtitle="Sem compromisso — só uma conversa sobre o seu negócio."
-        />
       </div>
-    </>
+
+      {/* SMART Legend */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        {SMART_ITEMS.map(s => (
+          <div
+            key={s.key}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: `${s.color}12`,
+              border: `1px solid ${s.color}30`,
+              borderRadius: 20, padding: "4px 12px",
+            }}
+          >
+            <span style={{ color: s.color, display: "flex", alignItems: "center" }}>{s.icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      {list.length > 1 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {list.map((obj, i) => (
+            <button
+              key={i}
+              className="obj-tab"
+              onClick={() => setExpanded(i)}
+              style={{
+                background: expanded === i ? "rgba(6,102,255,0.15)" : "var(--bg-surface)",
+                border: `1px solid ${expanded === i ? "rgba(6,102,255,0.4)" : "var(--border-color)"}`,
+                borderRadius: 10,
+                padding: "8px 16px",
+                color: expanded === i ? "#3B82F6" : "var(--text-secondary)",
+                fontSize: 13,
+                fontWeight: expanded === i ? 600 : 400,
+                cursor: "pointer",
+              }}
+            >
+              Objetivo {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Active objetivo */}
+      {list.map((obj, i) => i !== expanded ? null : (
+        <div
+          key={i}
+          style={{
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          {/* Title banner */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(6,102,255,0.08) 0%, rgba(6,183,216,0.08) 100%)",
+            borderBottom: "1px solid var(--border-color)",
+            padding: "20px 24px",
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: "rgba(6,183,216,0.15)",
+                border: "1px solid rgba(6,183,216,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, fontWeight: 700, color: "#06B7D8",
+                flexShrink: 0,
+              }}>
+                {i + 1}
+              </div>
+              <div>
+                <p style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
+                  {obj.titulo}
+                </p>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{obj.meta}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* SMART breakdown */}
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 12 }}>
+              {SMART_ITEMS.map(s => {
+                const text = obj[s.key]
+                if (!text) return null
+                return (
+                  <div
+                    key={s.key}
+                    style={{
+                      background: `${s.color}08`,
+                      border: `1px solid ${s.color}20`,
+                      borderTop: `2px solid ${s.color}`,
+                      borderRadius: 12,
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <span style={{ color: s.color, display: "flex", alignItems: "center" }}>{s.icon}</span>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        {s.label}
+                      </p>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>{text}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
