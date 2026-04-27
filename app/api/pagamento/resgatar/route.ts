@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase"
 import { checkRateLimit } from "@/lib/rate-limit"
-import { enviarEmailAcesso } from "@/lib/email"
+import { enviarEmailBoasVindas } from "@/lib/email"
 
 const PLACEHOLDER_EMAIL = "aguardando_checkout@cineze.com.br"
 
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     transaction_nsu?: string
     slug?: string
     email?: string
+    password?: string
   }
 
   try {
@@ -35,11 +36,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 })
   }
 
-  const { order_nsu, transaction_nsu, slug, email } = body
+  const { order_nsu, transaction_nsu, slug, email, password } = body
 
   // 1. Validar campos obrigatórios
-  if (!order_nsu || !transaction_nsu || !slug) {
-    return NextResponse.json({ error: "Parâmetros de pagamento ausentes" }, { status: 400 })
+  if (!order_nsu || !transaction_nsu || !slug || !password) {
+    return NextResponse.json({ error: "Parâmetros de pagamento ou senha ausentes" }, { status: 400 })
+  }
+
+  if (password.length < 6) {
+    return NextResponse.json({ error: "A senha deve ter pelo menos 6 caracteres" }, { status: 400 })
   }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -117,6 +122,7 @@ export async function POST(request: NextRequest) {
 
   const { data: newUserData, error: createError } = await supabase.auth.admin.createUser({
     email: cleanEmail,
+    password: password,
     email_confirm: true,
   })
 
@@ -133,35 +139,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Erro ao criar usuário" }, { status: 500 })
     }
     console.log(`[resgatar] Usuário ${cleanEmail} já existe, prosseguindo...`)
+    
+    // Se ele já existe, vamos atualizar a senha dele para a nova que ele escolheu agora
+    const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+      // Precisamos buscar o ID do usuário para atualizar
+      // Mas para não fazer query extra, o Supabase Admin não tem "updateUserByEmail"
+      // Faremos uma query leve
+      (await supabase.from("profiles").select("id").eq("email", cleanEmail).single()).data?.id || "",
+      { password: password }
+    )
+    
+    if (updateData?.user) {
+      userId = updateData.user.id
+    }
   }
 
-  // 6. Gerar magic link de acesso (APENAS GERA, NÃO ENVIA)
-  const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
-    type: "recovery",
-    email: cleanEmail,
-    options: {
-      redirectTo: `${request.nextUrl.origin}/dashboard/raio-x`,
-    },
-  })
-
-  if (recoveryError || !recoveryData?.user?.id || !recoveryData?.properties?.action_link) {
-    console.error("[resgatar] Erro ao gerar link de acesso:", recoveryError)
-    return NextResponse.json({ error: "Erro ao criar link seguro" }, { status: 500 })
+  if (!userId) {
+    // Buscar o userId se falhou tudo
+    const { data: profileObj } = await supabase.from("profiles").select("id").eq("email", cleanEmail).single()
+    if (profileObj) userId = profileObj.id
   }
 
-  const magicLink = recoveryData.properties.action_link
-
-  // 7. ENVIAR VIA RESEND (Contornando o bloqueio do Supabase)
-  const envioResend = await enviarEmailAcesso(cleanEmail, magicLink)
+  // 6. ENVIAR E-MAIL DE BOAS-VINDAS VIA RESEND (Sem link mágico)
+  const envioResend = await enviarEmailBoasVindas(cleanEmail)
   
   if (envioResend.error) {
     console.error("[resgatar] Erro no Resend:", envioResend.error)
     return NextResponse.json({ error: "Erro no servidor de e-mails. Avise o suporte." }, { status: 500 })
   }
 
-  userId = userId ?? recoveryData.user.id
-
-  // 8. Ativar plano no perfil
+  // 7. Ativar plano no perfil
   const { error: profileError } = await supabase
     .from("profiles")
     .update({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase"
-import { enviarEmailAcesso } from "@/lib/email"
+import { enviarEmailBoasVindas } from "@/lib/email"
 
 // ─── Tipos do payload InfinitePay ─────────────────────────────────────────────
 //
@@ -148,15 +148,17 @@ export async function POST(request: NextRequest) {
 
   // 4. Criar usuário no Supabase Auth
   //    email_confirm: true → email já confirmado, não precisa verificar
-  let userId: string | null = null
+  let userId = null
+  let generatedPassword = Math.random().toString(36).slice(-8) + "Cz!"
 
-  const { data: newUserData, error: createError } = await supabase.auth.admin.createUser({
+  const { data: userData, error: createError } = await supabase.auth.admin.createUser({
     email,
+    password: generatedPassword,
     email_confirm: true,
   })
 
-  if (!createError && newUserData?.user?.id) {
-    userId = newUserData.user.id
+  if (!createError && userData?.user?.id) {
+    userId = userData.user.id
   } else if (createError) {
     // Usuário já existe (status 422 ou mensagem "already registered")
     const jaExiste =
@@ -173,33 +175,20 @@ export async function POST(request: NextRequest) {
     // userId virá do generateLink logo abaixo
   }
 
-  // 5. Gerar link de redefinição de senha (APENAS GERA, NÃO ENVIA)
-  const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: {
-      redirectTo: `${request.nextUrl.origin}/dashboard/raio-x`,
-    },
-  })
-
-  if (recoveryError || !recoveryData?.user?.id || !recoveryData?.properties?.action_link) {
-    console.error("Erro ao gerar link de acesso:", recoveryError)
-    return NextResponse.json({ error: "Erro ao criar link seguro" }, { status: 500 })
+  // Buscar o userId se falhou tudo
+  if (!userId) {
+    const { data: profileObj } = await supabase.from("profiles").select("id").eq("email", email).single()
+    if (profileObj) userId = profileObj.id
   }
 
-  const magicLink = recoveryData.properties.action_link
-
-  // 6. ENVIAR VIA RESEND (Contornando o bloqueio do Supabase)
-  const envioResend = await enviarEmailAcesso(email, magicLink)
+  // 5. ENVIAR VIA RESEND DE BOAS VINDAS (Sem link mágico)
+  const envioResend = await enviarEmailBoasVindas(email, generatedPassword || undefined)
   
   if (envioResend.error) {
     console.error("Erro no Resend ao disparar webhook:", envioResend.error)
     // Opcional: Ainda retornar 200 pro InfinitePay, pois o pedido em si foi processado e salvo,
     // mas logamos o erro do resend pesadamente.
   }
-
-  // Usar userId do recovery se não tínhamos (usuário já existia)
-  userId = userId ?? recoveryData.user.id
 
   // 6. Ativar plano no perfil
   //    O trigger on_auth_user_created já criou o perfil ao criar o usuário.

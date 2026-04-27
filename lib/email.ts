@@ -7,11 +7,13 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 // However, the user said they configured it. Let's use `suporte@cineze.com.br` or whatever their email is. If it fails, they will see it.
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Equipe Cineze <suporte@cineze.com.br>"
 
-export async function enviarEmailAcesso(paraEmail: string, linkMagico: string) {
+export async function enviarEmailBoasVindas(paraEmail: string, senhaAleatoria?: string) {
   if (!process.env.RESEND_API_KEY) {
     console.error("ERRO: RESEND_API_KEY não configurada no ambiente.")
     return { error: "Serviço de email indisponível" }
   }
+
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://diagnostico.cineze.com.br"}/login`
 
   const html = `
     <!DOCTYPE html>
@@ -19,7 +21,7 @@ export async function enviarEmailAcesso(paraEmail: string, linkMagico: string) {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Seu acesso ao Diagnóstico</title>
+      <title>Bem-vindo ao Diagnóstico Cineze</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #030712; padding: 40px 0;">
@@ -42,26 +44,33 @@ export async function enviarEmailAcesso(paraEmail: string, linkMagico: string) {
                   <h2 style="color: #f3f4f6; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">Seu acesso foi liberado!</h2>
                   
                   <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                    Olá! Recebemos a confirmação do seu pagamento. Seu Diagnóstico de Negócios exclusivo está pronto para ser gerado.
+                    Olá! Recebemos a confirmação do seu pagamento. Seu Diagnóstico de Negócios exclusivo está pronto para ser acessado.
                   </p>
 
-                  <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0 0 40px 0;">
-                    Clique no botão abaixo para preencher as informações da sua empresa e receber seu raio-x completo em instantes:
+                  <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                    Você pode acessar o painel a qualquer momento usando seu e-mail de compra na nossa página de login:
                   </p>
+
+                  ${senhaAleatoria ? `
+                  <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 30px; text-align: center;">
+                    <p style="color: #9ca3af; font-size: 14px; margin: 0 0 10px 0;">Sua senha provisória de acesso é:</p>
+                    <p style="color: #06b6d4; font-size: 24px; font-weight: bold; letter-spacing: 2px; margin: 0;">${senhaAleatoria}</p>
+                  </div>
+                  ` : ''}
 
                   <!-- CTA Button -->
                   <table border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                       <td align="center">
-                        <a href="${linkMagico}" style="display: inline-block; padding: 16px 32px; background-color: #06b6d4; color: #030712; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);">
-                          ACESSAR MEU DIAGNÓSTICO
+                        <a href="${loginUrl}" style="display: inline-block; padding: 16px 32px; background-color: #06b6d4; color: #030712; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);">
+                          ACESSAR MEU PAINEL
                         </a>
                       </td>
                     </tr>
                   </table>
 
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 40px 0 0 0; text-align: center;">
-                    Este é um link de acesso único e seguro. Se você não solicitou este email, apenas o ignore.
+                    Caso tenha qualquer dúvida, responda a este e-mail.
                   </p>
                 </td>
               </tr>
