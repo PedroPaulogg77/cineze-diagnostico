@@ -108,9 +108,6 @@ export async function POST(request: NextRequest) {
   // 2. Buscar email pelo order_nsu
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
-    .select("email, status")
-    .eq("order_nsu", order_nsu)
-    .single()
     .select("email, status, order_nsu")
     .eq("order_nsu", order_nsu)
     .maybeSingle()
