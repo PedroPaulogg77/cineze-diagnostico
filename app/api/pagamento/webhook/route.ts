@@ -111,102 +111,97 @@ export async function POST(request: NextRequest) {
     .select("email, status")
     .eq("order_nsu", order_nsu)
     .single()
+    .select("email, status, order_nsu")
+    .eq("order_nsu", order_nsu)
+    .maybeSingle()
 
   if (pedidoError || !pedido) {
-    console.error("Pedido não encontrado para order_nsu:", order_nsu, pedidoError)
-    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 400 })
+    console.error(`[webhook] Pedido ${order_nsu} não encontrado no banco.`)
+    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
   }
 
-  // Idempotência: se já processado, retornar 200 sem fazer nada
-  if (pedido.status === "pago") {
-    return NextResponse.json({ received: true, already_processed: true })
-  }
-
-  // 2.5 Resolver email real do cliente
-  //     Quando o checkout é criado via cold traffic (DiagnosticoPro), o email
-  //     salvo é o placeholder. O email real é coletado pela InfinitePay durante
-  //     o checkout e vem no payload do webhook.
   let email = pedido.email
+  
+  // 2. Verificar se já foi processado (Idempotência)
+  const { data: existingPaid } = await supabase
+    .from("pedidos")
+    .select("status")
+    .eq("transaction_nsu", transaction_nsu)
+    .eq("status", "pago")
+    .maybeSingle()
 
+  if (existingPaid) {
+    console.log(`[webhook] Transação ${transaction_nsu} já processada.`)
+    return NextResponse.json({ success: true, message: "Já processado" })
+  }
+
+  // 3. Se for placeholder, apenas marca como pago
   if (email === PLACEHOLDER_EMAIL) {
-    // Cold traffic: o email real será coletado na página /acesso após o redirect.
-    // Aqui só atualizamos o status para "pago" e saímos.
-    await supabase
+    const { error: updErr } = await supabase
       .from("pedidos")
       .update({ status: "pago", transaction_nsu })
       .eq("order_nsu", order_nsu)
 
-    console.log(`✓ Pedido ${order_nsu} marcado como pago (email será coletado na página /acesso)`)
+    if (updErr) {
+      console.error("[webhook] Erro ao atualizar placeholder:", updErr)
+      return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
+    }
+
+    console.log(`✓ Pedido ${order_nsu} marcado como pago (Aguardando email em /acesso)`)
     return NextResponse.json({ received: true, awaiting_email: true })
   }
 
-  // 3. Atualizar status do pedido (e email se era placeholder)
-  await supabase
+  // 4. Se tiver email real, processa tudo
+  console.log(`[webhook] Processando pagamento com email real: ${email}`)
+  const { error: updErr } = await supabase
     .from("pedidos")
     .update({ status: "pago", transaction_nsu, email })
     .eq("order_nsu", order_nsu)
 
-  // 3. Verificar idempotência (Evitar processar a mesma transação duas vezes)
-  const { data: existingOrder } = await supabase
-    .from("pedidos")
-    .select("status")
-    .eq("transaction_nsu", transaction_nsu)
-    .single()
-
-  if (existingOrder?.status === "pago") {
-    console.log(`[webhook] Transação ${transaction_nsu} já processada. Ignorando.`)
-    return NextResponse.json({ success: true, message: "Já processado" })
+  if (updErr) {
+    console.error("[webhook] Erro ao atualizar pedido real:", updErr)
+    return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
   }
 
   // 4. Criar usuário no Supabase Auth
-  //    email_confirm: true → email já confirmado, não precisa verificar
-  let userId = null
-  let generatedPassword = Math.random().toString(36).slice(-8) + "Cz!"
+  let userId: string | null = null
+  const generatedPassword = Math.random().toString(36).slice(-8) + "Cz!"
 
-  const { data: userData, error: createError } = await supabase.auth.admin.createUser({
-    email,
+  console.log(`[webhook] Criando/Buscando usuário para: ${email}`)
+  const { data: authData, error: createError } = await supabase.auth.admin.createUser({
+    email: email,
     password: generatedPassword,
     email_confirm: true,
   })
 
-  if (!createError && userData?.user?.id) {
-    userId = userData.user.id
+  if (authData?.user) {
+    userId = authData.user.id
   } else if (createError) {
-    // Usuário já existe (status 422 ou mensagem "already registered")
-    const jaExiste =
-      createError.status === 422 ||
-      createError.message?.toLowerCase().includes("already") ||
-      createError.message?.toLowerCase().includes("registered")
-
+    const jaExiste = createError.status === 422 || createError.message?.toLowerCase().includes("already") || createError.message?.toLowerCase().includes("registered")
     if (!jaExiste) {
-      console.error("Erro inesperado ao criar usuário:", createError)
+      console.error("[webhook] Erro ao criar usuário:", createError)
       return NextResponse.json({ error: "Erro ao criar usuário" }, { status: 500 })
     }
 
-    console.log(`Usuário ${email} já existe, prosseguindo...`)
-    // userId virá do generateLink logo abaixo
-  }
-
-  // Buscar o userId se falhou tudo
-  if (!userId) {
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
     const existingUser = !listError ? users.find(u => u.email?.toLowerCase() === email.toLowerCase()) : null
     if (existingUser) userId = existingUser.id
   }
 
   if (!userId) {
-    console.error("Não foi possível identificar o userId para o email:", email)
+    console.error("[webhook] Não foi possível identificar o userId para:", email)
     return NextResponse.json({ error: "Erro ao identificar usuário" }, { status: 500 })
   }
 
-  // 5. ENVIAR VIA RESEND DE BOAS VINDAS (Sem link mágico)
-  const envioResend = await enviarEmailBoasVindas(email, generatedPassword || undefined)
-  
+  // 5. ENVIAR VIA RESEND
+  console.log(`[webhook] Enviando boas-vindas via Resend para: ${email}`)
+  const envioResend = await enviarEmailBoasVindas(email, generatedPassword)
   if (envioResend.error) {
-    console.error("Erro no Resend ao disparar webhook:", envioResend.error)
+    console.error("[webhook] Erro Resend:", envioResend.error)
   }
 
   // 6. Ativar plano no perfil
+  console.log(`[webhook] Ativando plano para userId: ${userId}`)
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
@@ -217,8 +212,7 @@ export async function POST(request: NextRequest) {
     .eq("id", userId)
 
   if (profileError) {
-    // Trigger ainda não rodou (edge case) — criar perfil manualmente
-    console.warn("Perfil não encontrado, criando manualmente:", profileError)
+    console.warn("[webhook] Perfil não encontrado, criando manualmente...")
     await supabase.from("profiles").upsert(
       {
         id: userId,
@@ -232,8 +226,6 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  console.log(`✓ Acesso criado para ${email} | order_nsu: ${order_nsu}`)
-
-  // 7. Retornar 200 rapidamente para o InfinitePay não reenviar
-  return NextResponse.json({ received: true, processed: true })
+  console.log(`✓ [webhook] Finalizado com sucesso para: ${email}`)
+  return NextResponse.json({ success: true })
 }

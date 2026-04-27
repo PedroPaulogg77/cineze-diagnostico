@@ -64,6 +64,7 @@ function AcessoContent() {
         const res = await fetch(`/api/pagamento/status?order_nsu=${encodeURIComponent(orderNsu!)}`)
         const data = await res.json()
 
+        console.log(`[polling] Verificando order_nsu: ${orderNsu} | Status:`, data)
         if (data.pago) {
           limparTimers()
 
@@ -159,7 +160,12 @@ function AcessoContent() {
   return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        {estado === "verificando" && <TelaCarregando />}
+        {estado === "verificando" && <TelaCarregando onRetry={() => {
+          setEstado("verificando")
+          // O useEffect já vai disparar o polling novamente se resetarmos algo? 
+          // Na verdade o polling já está rodando, mas vamos forçar uma chamada.
+          window.location.reload()
+        }} />}
         {estado === "email" && (
           <TelaEmail
             emailInput={emailInput}
@@ -182,7 +188,13 @@ function AcessoContent() {
   )
 }
 
-function TelaCarregando() {
+function TelaCarregando({ onRetry }: { onRetry: () => void }) {
+  const [showRetry, setShowRetry] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShowRetry(true), 10000)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <>
       <div className="flex justify-center mb-10">
@@ -195,7 +207,23 @@ function TelaCarregando() {
         </div>
       </div>
       <h1 className="text-2xl font-bold text-white mb-4 tracking-tight">Confirmando seu pagamento...</h1>
-      <p className="text-gray-400 text-base leading-relaxed">Aguarde enquanto verificamos a transação.</p>
+      <p className="text-gray-400 text-base leading-relaxed mb-8">
+        Aguarde enquanto verificamos a transação com a InfinitePay.
+      </p>
+
+      {showRetry && (
+        <div className="animate-in fade-in duration-700">
+          <button
+            onClick={onRetry}
+            className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-gray-700"
+          >
+            Verificar novamente
+          </button>
+          <p className="text-xs text-gray-500 mt-4">
+            Se você já pagou e não está saindo desta tela, o sinal da operadora pode estar oscilando.
+          </p>
+        </div>
+      )}
     </>
   )
 }
