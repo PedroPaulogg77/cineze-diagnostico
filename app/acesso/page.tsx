@@ -37,6 +37,7 @@ function AcessoContent() {
   const [emailInput, setEmailInput] = useState("")
   const [confirmEmailInput, setConfirmEmailInput] = useState("")
   const [passwordInput, setPasswordInput] = useState("")
+  const [transactionNsuState, setTransactionNsuState] = useState<string | null>(transactionNsu)
   const [emailConfirmado, setEmailConfirmado] = useState<string | null>(null)
   const [erroMsg, setErroMsg] = useState<string | null>(null)
   const [visivel, setVisivel] = useState(false)
@@ -72,6 +73,7 @@ function AcessoContent() {
             setEmailConfirmado(data.email)
           } else {
             // Pagamento confirmado, pedir email
+            setTransactionNsuState(data.transaction_nsu)
             setEstado("email")
           }
         }
@@ -121,7 +123,7 @@ function AcessoContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_nsu: orderNsu,
-          transaction_nsu: pedido.transaction_nsu,
+          transaction_nsu: transactionNsuState,
           slug: "checkout-diagnostico-pro",
           email: emailInput,
           password: passwordInput,

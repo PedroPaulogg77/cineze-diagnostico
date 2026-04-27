@@ -24,5 +24,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     pago: pedido.status === "pago",
     email: pedido.status === "pago" ? pedido.email : null,
+    transaction_nsu: pedido.status === "pago" ? pedido.transaction_nsu : null,
   })
 }
