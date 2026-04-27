@@ -35,6 +35,7 @@ function AcessoContent() {
 
   const [estado, setEstado] = useState<Estado>("verificando")
   const [emailInput, setEmailInput] = useState("")
+  const [confirmEmailInput, setConfirmEmailInput] = useState("")
   const [emailConfirmado, setEmailConfirmado] = useState<string | null>(null)
   const [erroMsg, setErroMsg] = useState<string | null>(null)
   const [visivel, setVisivel] = useState(false)
@@ -100,6 +101,11 @@ function AcessoContent() {
       return
     }
 
+    if (emailInput !== confirmEmailInput) {
+      setErroMsg("Os emails não conferem. Digite com atenção.")
+      return
+    }
+
     setEstado("enviando")
     setErroMsg(null)
 
@@ -154,6 +160,8 @@ function AcessoContent() {
           <TelaEmail
             emailInput={emailInput}
             setEmailInput={setEmailInput}
+            confirmEmailInput={confirmEmailInput}
+            setConfirmEmailInput={setConfirmEmailInput}
             erroMsg={erroMsg}
             onSubmit={handleSubmitEmail}
           />
@@ -214,11 +222,15 @@ function TelaCarregando() {
 function TelaEmail({
   emailInput,
   setEmailInput,
+  confirmEmailInput,
+  setConfirmEmailInput,
   erroMsg,
   onSubmit,
 }: {
   emailInput: string
   setEmailInput: (v: string) => void
+  confirmEmailInput: string
+  setConfirmEmailInput: (v: string) => void
   erroMsg: string | null
   onSubmit: (e: React.FormEvent) => void
 }) {
@@ -253,17 +265,26 @@ function TelaEmail({
         <div className="flex flex-col gap-1">
           <input
             type="email"
-            placeholder="seu@email.com"
+            placeholder="Seu email principal"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             autoFocus
             className="w-full px-4 py-3.5 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-center text-base"
           />
-          <p className="text-[#8B9DB5] text-xs text-center mt-1">Revise seu email com atenção para não perder seu acesso.</p>
-          {erroMsg && (
-            <p className="text-red-400 text-sm mt-2">{erroMsg}</p>
-          )}
         </div>
+        <div className="flex flex-col gap-1">
+          <input
+            type="email"
+            placeholder="Confirme seu email"
+            value={confirmEmailInput}
+            onChange={(e) => setConfirmEmailInput(e.target.value)}
+            className="w-full px-4 py-3.5 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-center text-base"
+          />
+        </div>
+
+        {erroMsg && (
+          <p className="text-red-400 text-sm font-semibold">{erroMsg}</p>
+        )}
 
         <button
           type="submit"
