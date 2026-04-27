@@ -443,6 +443,7 @@ export default function OnboardingForm() {
   const [animClass, setAnimClass] = useState("")
   const [isNavigating, setIsNavigating] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
 
   const block = BLOCKS[currentBlock]
   const isLastBlock = currentBlock === BLOCKS.length - 1
@@ -524,8 +525,41 @@ export default function OnboardingForm() {
     }, 280)
   }
 
+  async function saveProgress(data: FormData) {
+    try {
+      setIsSaving(true)
+      const supabase = getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const objetivo = data.b10_objetivo
+      await supabase.from("onboarding_respostas").upsert({
+        user_id: user.id,
+        objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
+        descricao_clientes: (data.b3_ideal as string) || "",
+        canais_ativos: Array.isArray(data.b4_origem) ? data.b4_origem : [],
+        contexto_extra: buildRichContext(data),
+        completed: false, // Still in progress
+      }, { onConflict: "user_id" })
+
+      // Also update profile basic info if available
+      await supabase.from("profiles").update({
+        nome_negocio: (data.b1_nome as string) || "",
+        cidade_bairro: (data.b1_local as string) || "",
+        segmento: (data.b1_resumo as string) || "",
+        faturamento_faixa: (data.b2_fat as string) || "",
+      }).eq("id", user.id)
+
+    } catch (err) {
+      console.error("Erro ao auto-salvar:", err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   function handleNext() {
     if (!validateCurrentBlock()) return
+    saveProgress(formData) // Auto-save on forward (Enterprise UX)
     navigate("forward")
   }
 
@@ -581,8 +615,16 @@ export default function OnboardingForm() {
 
       <div className="flex flex-col min-h-screen pb-[80px]" style={{ backgroundColor: "#060D1A", color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}>
         {/* Header */}
-        <header className="text-center pt-8 pb-0">
+        <header className="text-center pt-8 pb-0 relative">
           <div className="text-2xl font-bold tracking-tight mb-1">cineze</div>
+          
+          {isSaving && (
+            <div className="absolute right-5 top-8 flex items-center gap-2 animate-pulse">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="text-[11px] font-medium text-cyan-400 uppercase tracking-widest">Salvando...</span>
+            </div>
+          )}
+
           <div className="w-full h-1" style={{ backgroundColor: "#1A3050" }}>
             <div
               className="h-full transition-all duration-300"

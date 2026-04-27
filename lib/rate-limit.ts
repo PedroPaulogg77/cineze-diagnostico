@@ -1,46 +1,70 @@
-// Limitador de Requisições simples em memória (LRU básico)
-// Atenção: Em ambientes Serverless/Edge (Vercel), esse cache pode ser reiniciado
-// caso o container do Edge Node seja reciclado. No entanto, é suficiente para
-// conter picos de SPAM massivos (Email Bombing).
+import { Ratelimit } from "@upstash/ratelimit"
+import { Redis } from "@upstash/redis"
 
+// 1. Configuração do Redis (Opcional - Ativa se as ENVs existirem)
+const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null
+
+// 2. Limitador Upstash (Algoritmo Token Bucket)
+const upstashRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.tokenBucket(5, "15 m", 5), // 5 tokens a cada 15 min
+      analytics: true,
+      prefix: "ratelimit:cineze",
+    })
+  : null
+
+// 3. Fallback em Memória (LRU básico)
 interface RateLimitTracker {
   count: number
   expiresAt: number
 }
+const memoryCache = new Map<string, RateLimitTracker>()
 
-const rateLimitCache = new Map<string, RateLimitTracker>()
+export async function checkRateLimit(
+  ip: string, 
+  limit: number = 5, 
+  windowMs: number = 15 * 60 * 1000
+): Promise<{ success: boolean }> {
+  
+  // A. Tentar via Redis (Enterprise)
+  if (upstashRateLimit) {
+    try {
+      const { success } = await upstashRateLimit.limit(ip)
+      return { success }
+    } catch (err) {
+      console.error("[ratelimit] Erro no Redis, usando fallback de memória:", err)
+    }
+  }
 
-export function checkRateLimit(ip: string, limit: number = 5, windowMs: number = 15 * 60 * 1000): { success: boolean } {
+  // B. Fallback em Memória (Standard)
   const now = Date.now()
-  const record = rateLimitCache.get(ip)
+  const record = memoryCache.get(ip)
 
-  if (!record) {
-    rateLimitCache.set(ip, { count: 1, expiresAt: now + windowMs })
+  if (!record || now > record.expiresAt) {
+    memoryCache.set(ip, { count: 1, expiresAt: now + windowMs })
     return { success: true }
   }
 
-  // Se o tempo expirou, reseta
-  if (now > record.expiresAt) {
-    rateLimitCache.set(ip, { count: 1, expiresAt: now + windowMs })
-    return { success: true }
-  }
-
-  // Se passou do limite, bloqueia
   if (record.count >= limit) {
     return { success: false }
   }
 
-  // Incrementa a contagem
   record.count++
   return { success: true }
 }
 
-// Limpeza periódica do cache para não estourar a memória do Serverless
-setInterval(() => {
-  const now = Date.now()
-  rateLimitCache.forEach((record, ip) => {
-    if (now > record.expiresAt) {
-      rateLimitCache.delete(ip)
-    }
-  })
-}, 60 * 1000)
+// Limpeza do cache de memória
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now()
+    memoryCache.forEach((record, ip) => {
+      if (now > record.expiresAt) memoryCache.delete(ip)
+    })
+  }, 60 * 1000)
+}

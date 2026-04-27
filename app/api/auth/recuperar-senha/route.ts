@@ -5,7 +5,7 @@ import { enviarEmailRecuperacaoSenha } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || request.ip || "127.0.0.1"
-  const rateLimit = checkRateLimit(`recover-${ip}`, 3, 15 * 60 * 1000)
+  const rateLimit = await checkRateLimit(`recover-${ip}`, 3, 15 * 60 * 1000)
 
   if (!rateLimit.success) {
     return NextResponse.json({ error: "Muitas tentativas. Aguarde 15 minutos." }, { status: 429 })

@@ -146,6 +146,18 @@ export async function POST(request: NextRequest) {
     .update({ status: "pago", transaction_nsu, email })
     .eq("order_nsu", order_nsu)
 
+  // 3. Verificar idempotência (Evitar processar a mesma transação duas vezes)
+  const { data: existingOrder } = await supabase
+    .from("pedidos")
+    .select("status")
+    .eq("transaction_nsu", transaction_nsu)
+    .single()
+
+  if (existingOrder?.status === "pago") {
+    console.log(`[webhook] Transação ${transaction_nsu} já processada. Ignorando.`)
+    return NextResponse.json({ success: true, message: "Já processado" })
+  }
+
   // 4. Criar usuário no Supabase Auth
   //    email_confirm: true → email já confirmado, não precisa verificar
   let userId = null

@@ -15,7 +15,7 @@ const PLACEHOLDER_EMAIL = "aguardando_checkout@cineze.com.br"
 export async function POST(request: NextRequest) {
   // Rate Limiting Básico (Anti-Spam)
   const ip = request.headers.get("x-forwarded-for") || request.ip || "127.0.0.1"
-  const rateLimit = checkRateLimit(ip, 5, 15 * 60 * 1000) // 5 req a cada 15 min
+  const rateLimit = await checkRateLimit(ip, 5, 15 * 60 * 1000) // 5 req a cada 15 min
 
   if (!rateLimit.success) {
     console.warn(`[Rate Limit] Bloqueado IP: ${ip} na rota /resgatar`)

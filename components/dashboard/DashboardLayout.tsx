@@ -162,6 +162,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           if (data?.nome_negocio) setBusinessName(data.nome_negocio)
           const nameForInitials = data?.nome_negocio || data?.nome_responsavel || user.email || ""
           setInitials(getInitials(nameForInitials))
+
+          // Marcar atividade silenciosa (Para o radar de clientes fantasmas no Admin)
+          supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("id", user.id).then(() => {})
         })
     })
   }, [])
