@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { createBrowserSupabaseClient } from "@/lib/supabase"
 
 type Estado = "verificando" | "email" | "enviando" | "sucesso" | "ja_resgatado" | "timeout" | "erro"
 
@@ -117,6 +118,16 @@ function AcessoContent() {
       const data = await res.json()
 
       if (res.ok && data.success) {
+        // Envia magic link para o email informado
+        const supabase = createBrowserSupabaseClient()
+        await supabase.auth.signInWithOtp({
+          email: data.email,
+          options: {
+            emailRedirectTo: "https://diagnostico.cineze.com.br/dashboard/raio-x",
+            shouldCreateUser: false,
+          },
+        })
+
         setEmailConfirmado(data.email)
         setEstado("sucesso")
       } else if (res.status === 409) {
