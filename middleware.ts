@@ -60,8 +60,8 @@ export async function middleware(request: NextRequest) {
       const authValue = basicAuth.split(" ")[1]
       const [userStr, pwdStr] = atob(authValue).split(":")
 
-      const adminUser = process.env.ADMIN_USER || "admin"
-      const adminPass = process.env.ADMIN_SECRET || "pedrocin"
+      const adminUser = process.env.CINEZE_ADMIN_USER || "admin"
+      const adminPass = process.env.CINEZE_ADMIN_PASSWORD || "pedrocin"
 
       if (userStr === adminUser && pwdStr === adminPass) {
         return response
