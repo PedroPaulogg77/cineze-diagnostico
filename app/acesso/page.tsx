@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase"
+import { createBrowserClient } from "@supabase/ssr"
 
 type Estado = "verificando" | "email" | "enviando" | "sucesso" | "ja_resgatado" | "timeout" | "erro"
 
@@ -125,7 +125,10 @@ function AcessoContent() {
 
       if (res.ok && data.success) {
         // Envia magic link para o email informado
-        const supabase = createBrowserSupabaseClient()
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
         await supabase.auth.signInWithOtp({
           email: data.email,
           options: {
