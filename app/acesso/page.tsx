@@ -124,8 +124,6 @@ function AcessoContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_nsu: orderNsu,
-          transaction_nsu: transactionNsuState,
-          slug: "checkout-diagnostico-pro",
           email: emailInput,
           password: passwordInput,
         }),
