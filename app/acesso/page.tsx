@@ -167,6 +167,7 @@ function AcessoContent() {
             setConfirmEmailInput={setConfirmEmailInput}
             erroMsg={erroMsg}
             onSubmit={handleSubmitEmail}
+            isEnviando={estado === "enviando"}
           />
         )}
         {estado === "enviando" && <TelaEnviando />}
@@ -229,6 +230,7 @@ function TelaEmail({
   setConfirmEmailInput,
   erroMsg,
   onSubmit,
+  isEnviando,
 }: {
   emailInput: string
   setEmailInput: (v: string) => void
@@ -236,6 +238,7 @@ function TelaEmail({
   setConfirmEmailInput: (v: string) => void
   erroMsg: string | null
   onSubmit: (e: React.FormEvent) => void
+  isEnviando: boolean
 }) {
   return (
     <>
@@ -291,10 +294,10 @@ function TelaEmail({
 
         <button
           type="submit"
-          disabled={estado === "enviando"}
+          disabled={isEnviando}
           className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-bold rounded-xl transition-all text-base tracking-wide shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {estado === "enviando" ? "Enviando..." : "RECEBER MEU ACESSO"}
+          {isEnviando ? "Enviando..." : "RECEBER MEU ACESSO"}
         </button>
       </form>
 
