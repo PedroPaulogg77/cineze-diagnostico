@@ -128,28 +128,15 @@ export async function POST(request: NextRequest) {
   let email = pedido.email
 
   if (email === PLACEHOLDER_EMAIL) {
-    // Extrair email real do payload da InfinitePay (pode vir em diferentes caminhos)
-    const payloadEmail =
-      body.customer?.email?.toLowerCase().trim() ||
-      (typeof body.email === "string" ? body.email.toLowerCase().trim() : null) ||
-      body.metadata?.email?.toString().toLowerCase().trim() ||
-      null
+    // Cold traffic: o email real será coletado na página /acesso após o redirect.
+    // Aqui só atualizamos o status para "pago" e saímos.
+    await supabase
+      .from("pedidos")
+      .update({ status: "pago", transaction_nsu })
+      .eq("order_nsu", order_nsu)
 
-    if (payloadEmail) {
-      email = payloadEmail
-      console.log(`✓ Email real extraído do payload: ${PLACEHOLDER_EMAIL} → ${email}`)
-    } else {
-      // Último recurso: logar tudo para análise e rejeitar (InfinitePay vai reenviar)
-      console.error(
-        "❌ Email real não encontrado no payload da InfinitePay.",
-        "O pedido usou email placeholder e a InfinitePay não enviou customer.email.",
-        "Payload completo:", JSON.stringify(body, null, 2)
-      )
-      return NextResponse.json(
-        { error: "Email do cliente não disponível no webhook" },
-        { status: 400 }
-      )
-    }
+    console.log(`✓ Pedido ${order_nsu} marcado como pago (email será coletado na página /acesso)`)
+    return NextResponse.json({ received: true, awaiting_email: true })
   }
 
   // 3. Atualizar status do pedido (e email se era placeholder)

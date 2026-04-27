@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Rotas que qualquer um pode acessar sem sessão
-const PUBLIC_ROUTES = ["/login", "/signup"]
+const PUBLIC_ROUTES = ["/login", "/signup", "/pagamento", "/acesso"]
 
 // Rotas de autenticação — redireciona para o dashboard se já logado
 const AUTH_ROUTES = ["/login", "/signup"]
@@ -13,8 +13,8 @@ export async function middleware(request: NextRequest) {
   // Deixa passar recursos estáticos e webhook de pagamento (precisa do body raw)
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/auth/callback") ||
-    pathname.startsWith("/api/webhook/infinitepay") ||
+    pathname.startsWith("/api/pagamento/webhook") ||
+    pathname.startsWith("/api/pagamento/resgatar") ||
     pathname.includes(".")
   ) {
     return NextResponse.next()
@@ -52,13 +52,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // ── Raiz → redireciona conforme estado da sessão ────────────────────────────
-  if (pathname === "/") {
-    return NextResponse.redirect(
-      new URL(user ? "/dashboard/raio-x" : "/login", request.url)
-    )
-  }
-
   // ── Usuário logado tentando acessar página de auth ──────────────────────────
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     return NextResponse.redirect(new URL("/dashboard/raio-x", request.url))
@@ -88,9 +81,9 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single()
 
-    // 3. Sem plano ativo → site de vendas
+    // 3. Sem plano ativo → pagamento
     if (!profile?.plano_ativo) {
-      return NextResponse.redirect("https://cineze.com.br")
+      return NextResponse.redirect(new URL("/pagamento", request.url))
     }
 
     // 4. Plano ativo mas onboarding pendente → /onboarding
