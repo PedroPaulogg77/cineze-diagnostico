@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
 type Estado = "verificando" | "email" | "enviando" | "sucesso" | "ja_resgatado" | "timeout" | "erro"
@@ -10,6 +10,23 @@ const POLLING_INTERVAL_MS = 3000
 const TIMEOUT_MS = 90000
 
 export default function AcessoPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+        <div className="w-16 h-16 animate-spin text-blue-400">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      </main>
+    }>
+      <AcessoContent />
+    </Suspense>
+  )
+}
+
+function AcessoContent() {
   const searchParams = useSearchParams()
   const orderNsu = searchParams.get("order_nsu")
   const transactionNsu = searchParams.get("transaction_nsu")
