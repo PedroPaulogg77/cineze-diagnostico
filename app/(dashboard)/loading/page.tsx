@@ -54,12 +54,18 @@ export default function LoadingPage() {
         if (!user) throw new Error("Usuário não autenticado")
 
         const [{ data: profile }, { data: respostas }] = await Promise.all([
-          supabase.from("profiles").select("*").eq("id", user.id).single(),
-          supabase.from("onboarding_respostas").select("*").eq("user_id", user.id).single()
+          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+          supabase.from("onboarding_respostas").select("*").eq("user_id", user.id).maybeSingle()
         ])
 
-        if (!profile || !respostas) {
-          throw new Error("Respostas não encontradas. Por favor, volte ao formulário.")
+        if (!profile) {
+          throw new Error("Perfil não encontrado. Faça login novamente.")
+        }
+
+        if (!respostas) {
+          // Usuário ainda não completou o onboarding — redirecionar
+          router.replace("/onboarding")
+          return
         }
 
         payload = {
