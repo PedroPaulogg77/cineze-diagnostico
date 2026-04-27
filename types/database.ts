@@ -64,6 +64,7 @@ export interface Database {
           created_at?: string
         }
         Update: {
+          email?: string
           status?: string
           transaction_nsu?: string | null
         }
@@ -79,8 +80,6 @@ export interface Database {
           contexto_extra: string | null
           completed: boolean
           created_at: string
-          form_data: Json | null
-          api_payload: Json | null
         }
         Insert: {
           id?: string
@@ -91,8 +90,6 @@ export interface Database {
           contexto_extra?: string | null
           completed?: boolean
           created_at?: string
-          form_data?: Json | null
-          api_payload?: Json | null
         }
         Update: {
           objetivos?: string[]
@@ -100,8 +97,6 @@ export interface Database {
           canais_ativos?: string[]
           contexto_extra?: string | null
           completed?: boolean
-          form_data?: Json | null
-          api_payload?: Json | null
         }
         Relationships: []
       }
