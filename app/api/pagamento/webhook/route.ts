@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase"
+import { enviarEmailAcesso } from "@/lib/email"
 
 // ─── Tipos do payload InfinitePay ─────────────────────────────────────────────
 //
@@ -172,13 +173,7 @@ export async function POST(request: NextRequest) {
     // userId virá do generateLink logo abaixo
   }
 
-  // 5. Gerar link de redefinição de senha e enviar email
-  //
-  //    generateLink com type "recovery":
-  //    → Gera um link "Definir senha" e envia automaticamente via Supabase Email
-  //    → Também retorna o user.id (útil quando o usuário já existia)
-  //    → Requer SMTP configurado em: Supabase Dashboard → Auth → SMTP Settings
-  //
+  // 5. Gerar link de redefinição de senha (APENAS GERA, NÃO ENVIA)
   const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
     type: "recovery",
     email,
@@ -187,9 +182,20 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (recoveryError || !recoveryData?.user?.id) {
+  if (recoveryError || !recoveryData?.user?.id || !recoveryData?.properties?.action_link) {
     console.error("Erro ao gerar link de acesso:", recoveryError)
-    return NextResponse.json({ error: "Erro ao enviar email de acesso" }, { status: 500 })
+    return NextResponse.json({ error: "Erro ao criar link seguro" }, { status: 500 })
+  }
+
+  const magicLink = recoveryData.properties.action_link
+
+  // 6. ENVIAR VIA RESEND (Contornando o bloqueio do Supabase)
+  const envioResend = await enviarEmailAcesso(email, magicLink)
+  
+  if (envioResend.error) {
+    console.error("Erro no Resend ao disparar webhook:", envioResend.error)
+    // Opcional: Ainda retornar 200 pro InfinitePay, pois o pedido em si foi processado e salvo,
+    // mas logamos o erro do resend pesadamente.
   }
 
   // Usar userId do recovery se não tínhamos (usuário já existia)

@@ -124,19 +124,6 @@ function AcessoContent() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        // Envia magic link para o email informado
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-        await supabase.auth.signInWithOtp({
-          email: data.email,
-          options: {
-            emailRedirectTo: "https://diagnostico.cineze.com.br/dashboard/raio-x",
-            shouldCreateUser: false,
-          },
-        })
-
         setEmailConfirmado(data.email)
         setEstado("sucesso")
       } else if (res.status === 409) {

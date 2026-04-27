@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { enviarEmailAcesso } from "@/lib/email"
 
 const PLACEHOLDER_EMAIL = "aguardando_checkout@cineze.com.br"
 
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     console.log(`[resgatar] Usuário ${cleanEmail} já existe, prosseguindo...`)
   }
 
-  // 6. Gerar magic link de acesso (enviado automaticamente via Supabase SMTP/Resend)
+  // 6. Gerar magic link de acesso (APENAS GERA, NÃO ENVIA)
   const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
     type: "recovery",
     email: cleanEmail,
@@ -143,14 +144,24 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (recoveryError || !recoveryData?.user?.id) {
+  if (recoveryError || !recoveryData?.user?.id || !recoveryData?.properties?.action_link) {
     console.error("[resgatar] Erro ao gerar link de acesso:", recoveryError)
-    return NextResponse.json({ error: "Erro ao enviar email de acesso" }, { status: 500 })
+    return NextResponse.json({ error: "Erro ao criar link seguro" }, { status: 500 })
+  }
+
+  const magicLink = recoveryData.properties.action_link
+
+  // 7. ENVIAR VIA RESEND (Contornando o bloqueio do Supabase)
+  const envioResend = await enviarEmailAcesso(cleanEmail, magicLink)
+  
+  if (envioResend.error) {
+    console.error("[resgatar] Erro no Resend:", envioResend.error)
+    return NextResponse.json({ error: "Erro no servidor de e-mails. Avise o suporte." }, { status: 500 })
   }
 
   userId = userId ?? recoveryData.user.id
 
-  // 7. Ativar plano no perfil
+  // 8. Ativar plano no perfil
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
