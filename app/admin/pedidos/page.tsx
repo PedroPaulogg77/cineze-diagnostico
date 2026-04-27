@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
 
 interface PedidoAdmin {
   id: string
@@ -168,11 +167,6 @@ function AdminContent() {
                   })}
                 </tbody>
               </table>
-            </div>
-          </div>
-        )}
-            <div className="bg-gray-800/30 px-6 py-4 border-t border-gray-800 text-sm text-gray-400">
-              <strong>Como resolver:</strong> Pegue o <code>Order NSU</code> acima, busque no painel da InfinitePay quem foi o cliente que pagou, chame-o no WhatsApp e envie o <strong>Link de Resgate</strong> copiado.
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import {
@@ -8,7 +8,6 @@ import {
   PolarRadiusAxis, ResponsiveContainer,
 } from "recharts"
 import { useReactToPrint } from "react-to-print"
-import { useRef } from "react"
 import type { Pilares, NivelDiagnostico } from "@/types"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -111,6 +110,7 @@ function DetailCard({
   const color = scoreColor(score)
   return (
     <div
+      className="print-card"
       style={{
         background: "var(--bg-surface)", borderRadius: 12, padding: 24,
         border: "1px solid var(--border-color)", borderLeft: `4px solid ${color}`,
@@ -272,7 +272,6 @@ export default function RaioXPage() {
 
       if (!diag?.raio_x) { 
         if (profile?.onboarding_completo) {
-          // Answers exist, but no report
           setPageData({
             pendente: true,
             score_geral: 0, nivel: "Em Construção", resumo_executivo: "",
@@ -306,7 +305,6 @@ export default function RaioXPage() {
   if (loading) return <SkeletonLayout />
   if (!pageData) return null
 
-  // UI if pending report
   if (pageData.pendente) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "64px 24px", textAlign: "center", background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16 }}>
@@ -336,8 +334,6 @@ export default function RaioXPage() {
             boxShadow: "0 4px 12px rgba(0, 102, 255, 0.2)",
             transition: "transform 0.2s ease, box-shadow 0.2s ease"
           }}
-          onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 102, 255, 0.3)" }}
-          onMouseOut={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 102, 255, 0.2)" }}
         >
           Gerar Diagnóstico Agora
         </button>
@@ -389,7 +385,6 @@ export default function RaioXPage() {
       ` }} />
 
       <div className="flex flex-col gap-6">
-        {/* Header de Ações (Não sai no PDF) */}
         <div className="no-print flex justify-end mb-2">
           <button
             onClick={() => handlePrint()}
@@ -403,120 +398,80 @@ export default function RaioXPage() {
         </div>
 
         <div ref={contentRef} className="print-container flex flex-col gap-24">
-          {/* ── BLOCO 1: SCORE GERAL ────────────────────────────────────────── */}
-        <div
-          style={{
-            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
-            borderRadius: 16, padding: 32, display: "flex", gap: 40, alignItems: "center",
-          }}
-        >
-          {/* Círculo animado */}
-          <div style={{ flexShrink: 0, position: "relative", width: 160, height: 160 }}>
-            <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
-              <defs>
-                <linearGradient id="rxGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#0066FF" />
-                  <stop offset="100%" stopColor="#06B7D8" />
-                </linearGradient>
-              </defs>
-              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--border-color)" strokeWidth="12" />
-              <circle
-                cx="80" cy="80" r="70" fill="none"
-                stroke="url(#rxGrad)" strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={C_MAIN}
-                strokeDashoffset={animated ? mainOffset : C_MAIN}
-                style={{ transition: "stroke-dashoffset 1.5s ease-out" }}
-              />
-            </svg>
-            <div
-              style={{
-                position: "absolute", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)", textAlign: "center",
-              }}
-            >
-              <div style={{ color: "var(--text-primary)", fontSize: 48, fontWeight: 700, lineHeight: 1 }}>
-                {score_geral.toFixed(1)}
+          <div
+            className="print-card"
+            style={{
+              background: "var(--bg-surface)", border: "1px solid var(--border-color)",
+              borderRadius: 16, padding: 32, display: "flex", gap: 40, alignItems: "center",
+            }}
+          >
+            <div style={{ flexShrink: 0, position: "relative", width: 160, height: 160 }}>
+              <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
+                <defs>
+                  <linearGradient id="rxGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#0066FF" />
+                    <stop offset="100%" stopColor="#06B7D8" />
+                  </linearGradient>
+                </defs>
+                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--border-color)" strokeWidth="12" />
+                <circle
+                  cx="80" cy="80" r="70" fill="none"
+                  stroke="url(#rxGrad)" strokeWidth="12" strokeLinecap="round"
+                  strokeDasharray={C_MAIN}
+                  strokeDashoffset={animated ? mainOffset : C_MAIN}
+                  style={{ transition: "stroke-dashoffset 1.5s ease-out" }}
+                />
+              </svg>
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
+                <div style={{ color: "var(--text-primary)", fontSize: 48, fontWeight: 700, lineHeight: 1 }}>{score_geral.toFixed(1)}</div>
+                <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>de 10</div>
               </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>de 10</div>
             </div>
-          </div>
 
-          {/* Info lateral */}
-          <div style={{ flex: 1 }}>
-            <span
-              style={{
-                display: "block", color: "var(--text-secondary)", fontSize: 13,
-                textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px", marginBottom: 12,
-              }}
-            >
-              Índice geral de presença digital
-            </span>
-            <span
-              style={{
-                display: "inline-block", background: badge.bg, color: badge.color,
-                padding: "6px 12px", borderRadius: 20, fontSize: 13, fontWeight: 600, marginBottom: 24,
-              }}
-            >
-              {nivel}
-            </span>
-            <p style={{ color: "var(--text-primary)", fontSize: 15, lineHeight: 1.6, margin: 0 }}>
-              {resumo_executivo}
-            </p>
-          </div>
-        </div>
-
-        {/* ── BLOCO 2: RADAR + BARRAS ─────────────────────────────────────── */}
-        <div
-          style={{
-            background: "var(--bg-surface)", border: "1px solid var(--border-color)",
-            borderRadius: 16, padding: 32,
-          }}
-        >
-          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "0 0 24px" }}>
-            Análise por pilar
-          </h2>
-          <div style={{ display: "flex", gap: 40, alignItems: "center" }}>
-            {/* Radar Chart */}
             <div style={{ flex: 1 }}>
-              <ResponsiveContainer width="100%" height={240}>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke={chartColors.grid} />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: chartColors.tick, fontSize: 12 }} />
-                  <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
-                  <Radar
-                    name="Score" dataKey="score"
-                    stroke="#0066FF" fill="#0066FF" fillOpacity={0.2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Barras dos pilares */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
-              {pillarRows.map(p => (
-                <PillarRow key={p.label} label={p.label} score={p.score} animated={animated} />
-              ))}
+              <span style={{ display: "block", color: "var(--text-secondary)", fontSize: 13, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px", marginBottom: 12 }}>Índice geral de presença digital</span>
+              <span style={{ display: "inline-block", background: badge.bg, color: badge.color, padding: "6px 12px", borderRadius: 20, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>{nivel}</span>
+              <p style={{ color: "var(--text-primary)", fontSize: 15, lineHeight: 1.6, margin: 0 }}>{resumo_executivo}</p>
             </div>
           </div>
+
+          <div
+            className="print-card"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 32 }}
+          >
+            <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "0 0 24px" }}>Análise por pilar</h2>
+            <div style={{ display: "flex", gap: 40, alignItems: "center" }}>
+              <div style={{ flex: 1 }}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke={chartColors.grid} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: chartColors.tick, fontSize: 12 }} />
+                    <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
+                    <Radar name="Score" dataKey="score" stroke="#0066FF" fill="#0066FF" fillOpacity={0.2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
+                {pillarRows.map(p => (
+                  <PillarRow key={p.label} label={p.label} score={p.score} animated={animated} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "8px 0 0" }}>Diagnóstico detalhado</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+            {details.map(d => (
+              <DetailCard
+                key={d.label}
+                label={d.label}
+                score={d.score}
+                diagnostico={d.pilar?.diagnostico ?? ""}
+                recomendacoes={d.pilar?.recomendacoes ?? []}
+              />
+            ))}
+          </div>
         </div>
-
-        {/* ── BLOCO 3: DIAGNÓSTICO DETALHADO ──────────────────────────────── */}
-        <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "8px 0 0" }}>
-          Diagnóstico detalhado
-        </h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-          {details.map(d => (
-            <DetailCard
-              key={d.label}
-              label={d.label}
-              score={d.score}
-              diagnostico={d.pilar?.diagnostico ?? ""}
-              recomendacoes={d.pilar?.recomendacoes ?? []}
-            />
-          ))}
-        </div>
-
       </div>
     </>
   )
