@@ -138,26 +138,18 @@ export async function POST(request: NextRequest) {
       console.error("[resgatar] Erro ao criar usuário:", createError)
       return NextResponse.json({ error: "Erro ao criar usuário" }, { status: 500 })
     }
-    console.log(`[resgatar] Usuário ${cleanEmail} já existe, prosseguindo...`)
+    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
+    const existingUser = !listError ? users.find(u => u.email?.toLowerCase() === cleanEmail) : null
     
-    // Se ele já existe, vamos atualizar a senha dele para a nova que ele escolheu agora
-    const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
-      // Precisamos buscar o ID do usuário para atualizar
-      // Mas para não fazer query extra, o Supabase Admin não tem "updateUserByEmail"
-      // Faremos uma query leve
-      (await supabase.from("profiles").select("id").eq("email", cleanEmail).single()).data?.id || "",
-      { password: password }
-    )
-    
-    if (updateData?.user) {
-      userId = updateData.user.id
+    if (existingUser) {
+      userId = existingUser.id
+      // Atualizar a senha
+      await supabase.auth.admin.updateUserById(userId, { password: password })
     }
   }
 
   if (!userId) {
-    // Buscar o userId se falhou tudo
-    const { data: profileObj } = await supabase.from("profiles").select("id").eq("email", cleanEmail).single()
-    if (profileObj) userId = profileObj.id
+    return NextResponse.json({ error: "Erro ao identificar usuário" }, { status: 500 })
   }
 
   // 6. ENVIAR E-MAIL DE BOAS-VINDAS VIA RESEND (Sem link mágico)

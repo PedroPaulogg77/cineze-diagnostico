@@ -420,7 +420,7 @@ function TelaTimeout() {
   )
 }
 
-function TelaErro() {
+function TelaErro({ erroMsg }: { erroMsg: string | null }) {
   return (
     <>
       <div className="flex justify-center mb-10">
@@ -441,11 +441,11 @@ function TelaErro() {
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-4 tracking-tight">
-        Link inválido
+        Algo deu errado
       </h1>
 
       <p className="text-gray-400 text-base leading-relaxed mb-8">
-        Este link de acesso não é válido. Entre em contato se precisar de ajuda.
+        {erroMsg || "Não conseguimos localizar seu pedido. Se você acabou de pagar, aguarde 30 segundos e recarregue."}
       </p>
 
       <a
