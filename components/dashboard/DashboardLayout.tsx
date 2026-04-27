@@ -123,6 +123,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [businessName, setBusinessName] = useState("Meu Negócio")
   const [initials, setInitials] = useState("ME")
+  const [userEmail, setUserEmail] = useState("")
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { group, label } = getActiveInfo(pathname)
@@ -151,6 +152,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     )
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      setUserEmail(user.email || "")
       supabase
         .from("profiles")
         .select("nome_negocio, nome_responsavel")
@@ -423,9 +425,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </svg>
 
                 <div className="dl-dropdown">
+                  <div className="px-4 py-2 mb-1">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Conta</p>
+                    <p className="text-sm font-medium text-gray-300 truncate" title={userEmail}>{userEmail}</p>
+                  </div>
                   <div className="dl-dropdown-sep" />
                   <div className="dl-dropdown-item" onClick={() => router.push("/onboarding")}>
                     Refazer diagnóstico
+                  </div>
+                  <div className="dl-dropdown-item" onClick={() => router.push("/atualizar-senha")}>
+                    Alterar senha
                   </div>
                   <div className="dl-dropdown-sep" />
                   <div className="dl-dropdown-item dl-dropdown-danger" onClick={handleSignOut}>

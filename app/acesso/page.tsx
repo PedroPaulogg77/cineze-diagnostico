@@ -143,8 +143,7 @@ function AcessoContent() {
         setEmailConfirmado(emailInput)
         setEstado("sucesso")
       } else if (res.status === 409) {
-        setErroMsg("Acesso já resgatado.")
-        setEstado("erro")
+        setEstado("ja_resgatado")
       } else {
         setErroMsg(data.error || "Erro ao gerar acesso.")
         setEstado("email")
@@ -173,6 +172,8 @@ function AcessoContent() {
         )}
         {estado === "enviando" && <TelaEnviando />}
         {estado === "sucesso" && <TelaSucesso emailConfirmado={emailConfirmado} />}
+        {estado === "ja_resgatado" && <TelaJaResgatado />}
+        {estado === "timeout" && <TelaTimeout />}
         {estado === "erro" && <TelaErro erroMsg={erroMsg} />}
       </div>
     </main>
@@ -293,6 +294,79 @@ function TelaEnviando() {
       <div className="flex justify-center mb-10">
         <div className="relative w-28 h-28 flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-cyan-500/15 animate-ping" />
+          <svg className="w-16 h-16 animate-spin text-cyan-400" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      </div>
+      <h1 className="text-2xl font-bold text-white mb-4 tracking-tight">Criando seu acesso...</h1>
+      <p className="text-gray-400 text-base leading-relaxed">
+        Estamos configurando tudo para você.<br />Aguarde um momento.
+      </p>
+    </>
+  )
+}
+
+function TelaSucesso({ emailConfirmado }: { emailConfirmado: string | null }) {
+  useEffect(() => {
+    // Redirecionamento automático sem atrito (Gargalo #2 Resolvido)
+    const t = setTimeout(() => {
+      window.location.href = "/dashboard/raio-x"
+    }, 3000)
+    return () => clearTimeout(t)
+  }, [])
+
+  return (
+    <>
+      <div className="flex justify-center mb-10">
+        <div className="relative w-28 h-28">
+          <span className="absolute inset-0 rounded-full bg-green-500/15 animate-ping" />
+          <span className="absolute inset-2 rounded-full bg-green-500/10" />
+          <div className="absolute inset-0 rounded-full border-2 border-green-500/60 flex items-center justify-center bg-green-500/5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 text-green-400">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <h1 className="text-3xl font-bold text-white mb-4 tracking-tight">Acesso criado!</h1>
+      <p className="text-gray-300 text-lg leading-relaxed mb-6">
+        Logado com sucesso como: <strong className="text-white">{emailConfirmado}</strong>
+      </p>
+      <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl mb-6">
+        <p className="text-cyan-400 text-sm font-medium animate-pulse">
+          Redirecionando para o seu painel automaticamente...
+        </p>
+      </div>
+    </>
+  )
+}
+
+function TelaJaResgatado() {
+  return (
+    <>
+      <div className="flex justify-center mb-10">
+        <div className="w-28 h-28 rounded-full border-2 border-cyan-500/60 flex items-center justify-center bg-cyan-500/5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 text-cyan-400">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M16 12l-4 4-4-4" />
+            <path d="M12 8v7" />
+          </svg>
+        </div>
+      </div>
+      <h1 className="text-2xl font-bold text-white mb-4 tracking-tight">Conta já está ativa!</h1>
+      <p className="text-gray-400 text-base leading-relaxed mb-8">
+        Detectamos que este pagamento já teve seu acesso resgatado. Você não precisa criar uma nova senha, basta fazer login.
+      </p>
+      <a
+        href="/login"
+        className="w-full inline-flex justify-center items-center py-3.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-bold rounded-xl transition-all text-base tracking-wide shadow-lg shadow-cyan-500/20"
+      >
+        IR PARA O LOGIN
+      </a>
+    </>
+  )
 }
 
 function TelaTimeout() {
