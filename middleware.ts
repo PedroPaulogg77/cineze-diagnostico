@@ -58,12 +58,13 @@ export async function middleware(request: NextRequest) {
 
     if (basicAuth) {
       const authValue = basicAuth.split(" ")[1]
-      const [userStr, pwdStr] = atob(authValue).split(":")
-
       const adminUser = process.env.CINEZE_ADMIN_USER || "admin"
       const adminPass = process.env.CINEZE_ADMIN_PASSWORD || "pedrocin"
 
-      if (userStr === adminUser && pwdStr === adminPass) {
+      // Pre-compute expected base64 to avoid decoding edge cases
+      const expectedAuth = btoa(`${adminUser}:${adminPass}`)
+      
+      if (authValue === expectedAuth) {
         return response
       }
     }
