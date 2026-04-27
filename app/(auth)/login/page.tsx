@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@supabase/ssr"
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -19,28 +19,25 @@ export default function LoginPage() {
     setStatus("loading")
     setErrorMsg("")
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    try {
+      const res = await fetch("/api/auth/recuperar-acesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard/raio-x`,
-        shouldCreateUser: false, // Só permite quem já comprou e foi criado na rota /resgatar
-      },
-    })
+      const data = await res.json()
 
-    if (error) {
-      if (error.message.includes("Signups not allowed")) {
-        setErrorMsg("Este email não possui acesso liberado. Se você já pagou, use o link que recebeu após a compra.")
-      } else {
-        setErrorMsg("Erro ao enviar o link. Verifique seu email e tente novamente.")
+      if (!res.ok) {
+        setErrorMsg(data.error || "Erro ao enviar o link. Tente novamente.")
+        setStatus("error")
+        return
       }
-      setStatus("error")
-    } else {
+
       setStatus("success")
+    } catch {
+      setErrorMsg("Erro de conexão. Verifique sua internet.")
+      setStatus("error")
     }
   }
 

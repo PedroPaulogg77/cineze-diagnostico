@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
     type: "recovery",
     email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/raio-x`,
+      redirectTo: `${request.nextUrl.origin}/dashboard/raio-x`,
     },
   })
 
