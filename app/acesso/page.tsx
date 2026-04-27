@@ -36,6 +36,7 @@ function AcessoContent() {
   const [estado, setEstado] = useState<Estado>("verificando")
   const [emailInput, setEmailInput] = useState("")
   const [confirmEmailInput, setConfirmEmailInput] = useState("")
+  const [passwordInput, setPasswordInput] = useState("")
   const [emailConfirmado, setEmailConfirmado] = useState<string | null>(null)
   const [erroMsg, setErroMsg] = useState<string | null>(null)
   const [visivel, setVisivel] = useState(false)
@@ -96,6 +97,16 @@ function AcessoContent() {
   async function handleSubmitEmail(e: React.FormEvent) {
     e.preventDefault()
 
+    if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
+      setErroMsg("Digite um email válido.")
+      return
+    }
+
+    if (emailInput !== confirmEmailInput) {
+      setErroMsg("Os emails não conferem. Digite com atenção.")
+      return
+    }
+
     if (passwordInput.length < 6) {
       setErroMsg("A senha deve ter pelo menos 6 caracteres.")
       return
@@ -152,6 +163,8 @@ function AcessoContent() {
           <TelaEmail
             emailInput={emailInput}
             setEmailInput={setEmailInput}
+            confirmEmailInput={confirmEmailInput}
+            setConfirmEmailInput={setConfirmEmailInput}
             passwordInput={passwordInput}
             setPasswordInput={setPasswordInput}
             erroMsg={erroMsg}
@@ -187,6 +200,8 @@ function TelaCarregando() {
 function TelaEmail({
   emailInput,
   setEmailInput,
+  confirmEmailInput,
+  setConfirmEmailInput,
   passwordInput,
   setPasswordInput,
   erroMsg,
@@ -194,6 +209,8 @@ function TelaEmail({
 }: {
   emailInput: string
   setEmailInput: (v: string) => void
+  confirmEmailInput: string
+  setConfirmEmailInput: (v: string) => void
   passwordInput: string
   setPasswordInput: (v: string) => void
   erroMsg: string | null
@@ -217,6 +234,23 @@ function TelaEmail({
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder="Ex: pedro@cineze.com.br"
+            required
+            className="w-full px-4 py-3.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-base"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="confirmEmail" className="block text-sm font-semibold text-gray-300 mb-2">Confirme seu email (evita erros)</label>
+          <input
+            id="confirmEmail"
+            type="email"
+            value={confirmEmailInput}
+            onChange={(e) => setConfirmEmailInput(e.target.value)}
+            onPaste={(e) => {
+              e.preventDefault();
+              alert("Por favor, digite o email novamente para garantir que não há erros.");
+            }}
+            placeholder="Digite o email novamente"
             required
             className="w-full px-4 py-3.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-base"
           />
