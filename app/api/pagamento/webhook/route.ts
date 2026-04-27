@@ -105,62 +105,68 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminSupabaseClient()
 
-  // 2. Buscar email pelo order_nsu
-  const { data: pedido, error: pedidoError } = await supabase
+  // 2. Buscar o pedido no banco — ele pode não existir se foi cold traffic direto
+  const { data: pedido } = await supabase
     .from("pedidos")
     .select("email, status, order_nsu")
     .eq("order_nsu", order_nsu)
     .maybeSingle()
 
-  if (pedidoError || !pedido) {
-    console.error(`[webhook] Pedido ${order_nsu} não encontrado no banco.`)
-    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
-  }
-
-  let email = pedido.email
-  
-  // 2. Verificar se já foi processado (Idempotência)
-  const { data: existingPaid } = await supabase
-    .from("pedidos")
-    .select("status")
-    .eq("transaction_nsu", transaction_nsu)
-    .eq("status", "pago")
-    .maybeSingle()
-
-  if (existingPaid) {
-    console.log(`[webhook] Transação ${transaction_nsu} já processada.`)
+  // 2a. Verificar idempotência: se já está pago, retornar imediatamente
+  if (pedido?.status === "pago") {
+    console.log(`[webhook] Pedido ${order_nsu} já estava pago.`)
     return NextResponse.json({ success: true, message: "Já processado" })
   }
 
-  // 3. Se for placeholder, apenas marca como pago
-  if (email === PLACEHOLDER_EMAIL) {
+  // Extrair email do cliente do payload do webhook (InfinitePay envia em vários campos)
+  const emailFromPayload = (
+    body.customer?.email ||
+    body.email ||
+    body.metadata?.email ||
+    ""
+  ).toString().toLowerCase().trim()
+
+  const email = emailFromPayload || pedido?.email || PLACEHOLDER_EMAIL
+
+  // 2b. Se pedido não existe, criar agora (cold traffic sem checkout prévio)
+  if (!pedido) {
+    console.log(`[webhook] Pedido ${order_nsu} não existe — criando agora.`)
+    const { error: insertErr } = await supabase
+      .from("pedidos")
+      .insert({
+        order_nsu,
+        transaction_nsu,
+        email,
+        status: "pago",
+      })
+
+    if (insertErr) {
+      console.error("[webhook] Erro ao inserir pedido:", insertErr)
+      return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 })
+    }
+  } else {
+    // 2c. Pedido existe mas não está pago — atualizar
     const { error: updErr } = await supabase
       .from("pedidos")
-      .update({ status: "pago", transaction_nsu })
+      .update({ status: "pago", transaction_nsu, email })
       .eq("order_nsu", order_nsu)
 
     if (updErr) {
-      console.error("[webhook] Erro ao atualizar placeholder:", updErr)
+      console.error("[webhook] Erro ao atualizar pedido:", updErr)
       return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
     }
+  }
 
+  // 3. Se for placeholder (sem email real), apenas liberamos a página /acesso
+  if (email === PLACEHOLDER_EMAIL) {
     console.log(`✓ Pedido ${order_nsu} marcado como pago (Aguardando email em /acesso)`)
     return NextResponse.json({ received: true, awaiting_email: true })
   }
 
-  // 4. Se tiver email real, processa tudo
-  console.log(`[webhook] Processando pagamento com email real: ${email}`)
-  const { error: updErr } = await supabase
-    .from("pedidos")
-    .update({ status: "pago", transaction_nsu, email })
-    .eq("order_nsu", order_nsu)
+  // 4. Email real: criar conta e ativar plano
+  console.log(`[webhook] Processando conta para email real: ${email}`)
 
-  if (updErr) {
-    console.error("[webhook] Erro ao atualizar pedido real:", updErr)
-    return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
-  }
-
-  // 4. Criar usuário no Supabase Auth
+  // 5. Criar usuário no Supabase Auth
   let userId: string | null = null
   const generatedPassword = Math.random().toString(36).slice(-8) + "Cz!"
 
