@@ -564,9 +564,6 @@ export default function OnboardingForm() {
       onboarding_completo: true,
     }).eq("id", user.id)
 
-    // Hand off to loading page via sessionStorage
-    sessionStorage.setItem("cineze_onboarding_payload", JSON.stringify(payload))
-
     router.push("/loading")
   }
 

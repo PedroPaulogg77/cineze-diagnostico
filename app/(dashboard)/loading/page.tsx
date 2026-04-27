@@ -43,40 +43,35 @@ export default function LoadingPage() {
     async function runGeneration() {
       try {
         let payload: OnboardingFormData | null = null
-        const raw = sessionStorage.getItem("cineze_onboarding_payload")
 
-        if (raw) {
-          payload = JSON.parse(raw) as OnboardingFormData
-        } else {
-          // Reconstruct from DB
-          const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-          )
-          
-          const { data: { user } } = await supabase.auth.getUser()
-          if (!user) throw new Error("Usuário não autenticado")
+        // Reconstruct from DB
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("Usuário não autenticado")
 
-          const [{ data: profile }, { data: respostas }] = await Promise.all([
-            supabase.from("profiles").select("*").eq("id", user.id).single(),
-            supabase.from("onboarding_respostas").select("*").eq("user_id", user.id).single()
-          ])
+        const [{ data: profile }, { data: respostas }] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).single(),
+          supabase.from("onboarding_respostas").select("*").eq("user_id", user.id).single()
+        ])
 
-          if (!profile || !respostas) {
-            throw new Error("Respostas não encontradas. Por favor, volte ao formulário.")
-          }
+        if (!profile || !respostas) {
+          throw new Error("Respostas não encontradas. Por favor, volte ao formulário.")
+        }
 
-          payload = {
-            nome_responsavel: profile.nome_responsavel || user.email || "",
-            nome_negocio: profile.nome_negocio || "",
-            cidade_bairro: profile.cidade_bairro || "",
-            segmento: profile.segmento || "",
-            faturamento_faixa: profile.faturamento_faixa || "",
-            objetivos: respostas.objetivos || [],
-            descricao_clientes: respostas.descricao_clientes || "",
-            canais_ativos: respostas.canais_ativos || [],
-            contexto_extra: respostas.contexto_extra || ""
-          }
+        payload = {
+          nome_responsavel: profile.nome_responsavel || user.email || "",
+          nome_negocio: profile.nome_negocio || "",
+          cidade_bairro: profile.cidade_bairro || "",
+          segmento: profile.segmento || "",
+          faturamento_faixa: profile.faturamento_faixa || "",
+          objetivos: respostas.objetivos || [],
+          descricao_clientes: respostas.descricao_clientes || "",
+          canais_ativos: respostas.canais_ativos || [],
+          contexto_extra: respostas.contexto_extra || ""
         }
 
         const res = await fetch("/api/diagnostico/gerar", {
@@ -97,7 +92,6 @@ export default function LoadingPage() {
 
         setLoadingText("Diagnóstico gerado com sucesso!")
         setProgress(100)
-        sessionStorage.removeItem("cineze_onboarding_payload")
 
         setTimeout(() => {
           router.replace(`/dashboard/raio-x?id=${id}`)

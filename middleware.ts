@@ -52,6 +52,30 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // ── Rotas protegidas por Basic Auth (Admin) ─────────────────────────────────
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    const basicAuth = request.headers.get("authorization")
+
+    if (basicAuth) {
+      const authValue = basicAuth.split(" ")[1]
+      const [userStr, pwdStr] = atob(authValue).split(":")
+
+      const adminUser = process.env.ADMIN_USER || "admin"
+      const adminPass = process.env.ADMIN_SECRET || "pedrocin"
+
+      if (userStr === adminUser && pwdStr === adminPass) {
+        return response
+      }
+    }
+
+    return new NextResponse("Acesso Restrito", {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": 'Basic realm="Painel Admin Cineze"',
+      },
+    })
+  }
+
   // ── Usuário logado tentando acessar página de auth ──────────────────────────
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     return NextResponse.redirect(new URL("/dashboard/raio-x", request.url))

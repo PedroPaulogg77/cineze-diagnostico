@@ -14,24 +14,15 @@ interface PedidoAnomalo {
 }
 
 function AdminContent() {
-  const searchParams = useSearchParams()
-  const secret = searchParams.get("secret")
-  
   const [pedidos, setPedidos] = useState<PedidoAnomalo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [copiedId, setCopiedId] = useState("")
 
   useEffect(() => {
-    if (!secret) {
-      setError("Senha ausente na URL.")
-      setLoading(false)
-      return
-    }
-
     async function fetchPedidos() {
       try {
-        const res = await fetch(`/api/admin/pedidos?secret=${secret}`)
+        const res = await fetch(`/api/admin/pedidos`)
         if (!res.ok) {
           throw new Error("Acesso negado ou erro no servidor.")
         }
@@ -45,7 +36,7 @@ function AdminContent() {
     }
 
     fetchPedidos()
-  }, [secret])
+  }, [])
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
