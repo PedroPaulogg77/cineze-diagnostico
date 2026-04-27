@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const { data: pedido, error } = await supabase
     .from("pedidos")
-    .select("status, email")
+    .select("status, email, transaction_nsu")
     .eq("order_nsu", orderNsu)
     .single()
 
