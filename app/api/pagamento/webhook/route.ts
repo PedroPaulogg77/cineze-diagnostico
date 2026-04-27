@@ -189,8 +189,14 @@ export async function POST(request: NextRequest) {
 
   // Buscar o userId se falhou tudo
   if (!userId) {
-    const { data: profileObj } = await supabase.from("profiles").select("id").eq("email", email).single()
-    if (profileObj) userId = profileObj.id
+    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
+    const existingUser = !listError ? users.find(u => u.email?.toLowerCase() === email.toLowerCase()) : null
+    if (existingUser) userId = existingUser.id
+  }
+
+  if (!userId) {
+    console.error("Não foi possível identificar o userId para o email:", email)
+    return NextResponse.json({ error: "Erro ao identificar usuário" }, { status: 500 })
   }
 
   // 5. ENVIAR VIA RESEND DE BOAS VINDAS (Sem link mágico)
@@ -198,12 +204,9 @@ export async function POST(request: NextRequest) {
   
   if (envioResend.error) {
     console.error("Erro no Resend ao disparar webhook:", envioResend.error)
-    // Opcional: Ainda retornar 200 pro InfinitePay, pois o pedido em si foi processado e salvo,
-    // mas logamos o erro do resend pesadamente.
   }
 
   // 6. Ativar plano no perfil
-  //    O trigger on_auth_user_created já criou o perfil ao criar o usuário.
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
