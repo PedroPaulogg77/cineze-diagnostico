@@ -38,9 +38,9 @@ export function checkRateLimit(ip: string, limit: number = 5, windowMs: number =
 // Limpeza periódica do cache para não estourar a memória do Serverless
 setInterval(() => {
   const now = Date.now()
-  for (const [ip, record] of rateLimitCache.entries()) {
+  rateLimitCache.forEach((record, ip) => {
     if (now > record.expiresAt) {
       rateLimitCache.delete(ip)
     }
-  }
+  })
 }, 60 * 1000)
