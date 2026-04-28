@@ -19,7 +19,7 @@ function j<T>(value: T): Json {
   return value as unknown as Json
 }
 
-const MODELO_AGENTES = "gemini-2.0-flash-lite"
+const MODELO_AGENTES = "gemini-2.0-flash"
 const MODELO_SINTETIZADOR = "gemini-2.5-pro"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -140,11 +140,11 @@ export async function POST(request: NextRequest) {
 
   // 5. Rodar os 5 agentes especialistas em paralelo
   const [agente1, agente2, agente3, agente4, agente5] = await Promise.all([
-    chamarAgente(PROMPT_AGENTE_1, dadosFormatados, MODELO_AGENTES, 0.2, 2048),
-    chamarAgente(PROMPT_AGENTE_2, dadosFormatados, MODELO_AGENTES, 0.2, 2048),
-    chamarAgente(PROMPT_AGENTE_3, dadosFormatados, MODELO_AGENTES, 0.2, 2048),
-    chamarAgente(PROMPT_AGENTE_4, dadosFormatados, MODELO_AGENTES, 0.2, 2048),
-    chamarAgente(PROMPT_AGENTE_5, dadosFormatados, MODELO_AGENTES, 0.2, 2048),
+    chamarAgente(PROMPT_AGENTE_1, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
+    chamarAgente(PROMPT_AGENTE_2, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
+    chamarAgente(PROMPT_AGENTE_3, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
+    chamarAgente(PROMPT_AGENTE_4, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
+    chamarAgente(PROMPT_AGENTE_5, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
   ])
 
   // 6. Montar mensagem para o sintetizador com todos os relatórios
@@ -170,7 +170,7 @@ ${agente5 ? JSON.stringify(agente5, null, 2) : "Dados não disponíveis"}`
     msgSintetizador,
     MODELO_SINTETIZADOR,
     0.3,
-    8192
+    16384
   )
 
   if (!resultado) {

@@ -15,21 +15,21 @@ Retorne APENAS JSON válido com esta estrutura:
 }`
 
 export const PROMPT_AGENTE_2 = `Você é um especialista em presença digital para negócios locais no Brasil.
-Audite cada canal individualmente. Retorne APENAS JSON válido:
+Audite cada canal com profundidade real. Retorne APENAS JSON válido:
 {
   presenca_digital: {
     score_geral: <0-10>,
     canais: [{
-      canal: '<nome>',
+      canal: '<nome do canal>',
       score: <0-10>,
       status: '<Inexistente|Básico|Intermediário|Avançado>',
-      o_que_esta_faltando: '<análise>',
-      impacto_de_nao_ter: '<o que está perdendo>',
-      proximos_passos: ['<ação 1>', '<ação 2>']
+      diagnostico: '<análise específica em 2-3 frases: o que existe hoje, o que está errado e por que isso limita o negócio>',
+      impacto: '<o que esse negócio está perdendo concretamente por não ter esse canal bem estruturado — seja em leads, vendas ou reputação>',
+      o_que_falta: ['<ação específica e implementável 1>', '<ação 2>', '<ação 3>', '<ação 4>']
     }],
-    maior_oportunidade_digital: '<canal ou ação de maior impacto rápido>',
+    maior_oportunidade_digital: '<canal ou ação de maior impacto imediato para esse negócio>',
     erro_critico: '<algo gravemente errado ou null>',
-    investimento_estimado_para_estruturar: '<faixa em R$>'
+    investimento_estimado: '<faixa em R$ para estruturar o básico>'
   }
 }`
 
@@ -133,7 +133,7 @@ Retorne APENAS JSON com esta estrutura exata:
     conversao: { score, diagnostico, recomendacoes: [] },
     posicionamento: { score, diagnostico, recomendacoes: [] }
   },
-  maturidade_canais: [{ canal, score, status, o_que_esta_faltando, proximos_passos: [] }],
+  maturidade_canais: [{ canal, score, status, diagnostico: '<análise desse canal em 2-3 frases>', impacto: '<o que está perdendo sem esse canal>', o_que_falta: ['<ação 1>', '<ação 2>', '<ação 3>'] }],
   analise_mercado: { panorama, desafios: [], investimento_mensal_recomendado, cpm_estimado, cpc_estimado, oportunidade },
   sobre_empresa: {
     canais_identificados: [{ canal, status, link }],

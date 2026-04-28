@@ -48,13 +48,14 @@ export interface Pilares {
   posicionamento: Pilar
 }
 
-export type StatusCanal = "Inexistente" | "Básico" | "Ativo" | "Avançado"
+export type StatusCanal = "Inexistente" | "Básico" | "Intermediário" | "Ativo" | "Avançado"
 
 export interface MaturidadeCanal {
   canal: string
   score: number
   status: StatusCanal
   diagnostico: string
+  impacto?: string
   o_que_falta: string[]
 }
 
