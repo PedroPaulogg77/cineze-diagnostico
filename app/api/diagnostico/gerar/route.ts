@@ -19,7 +19,7 @@ function j<T>(value: T): Json {
   return value as unknown as Json
 }
 
-const MODELO_AGENTES = "gemini-2.0-flash"
+const MODELO_AGENTES = "gemini-2.5-flash"
 const MODELO_SINTETIZADOR = "gemini-2.5-pro"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
