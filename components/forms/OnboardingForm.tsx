@@ -533,16 +533,19 @@ export default function OnboardingForm() {
       if (!user) return
 
       const objetivo = data.b10_objetivo
-      await supabase.from("onboarding_respostas").upsert({
+      const { error: upsertErr } = await supabase.from("onboarding_respostas").upsert({
         user_id: user.id,
         objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
         descricao_clientes: (data.b3_ideal as string) || "",
         canais_ativos: Array.isArray(data.b4_origem) ? data.b4_origem : [],
         contexto_extra: buildRichContext(data),
-        completed: false, // Still in progress
+        completed: false,
       }, { onConflict: "user_id" })
 
-      // Also update profile basic info if available
+      if (upsertErr) {
+        console.error("[auto-save] Falha ao salvar respostas:", upsertErr)
+      }
+
       await supabase.from("profiles").update({
         nome_negocio: (data.b1_nome as string) || "",
         cidade_bairro: (data.b1_local as string) || "",
@@ -551,7 +554,7 @@ export default function OnboardingForm() {
       }).eq("id", user.id)
 
     } catch (err) {
-      console.error("Erro ao auto-salvar:", err)
+      console.error("[auto-save] Erro inesperado:", err)
     } finally {
       setIsSaving(false)
     }
@@ -575,30 +578,40 @@ export default function OnboardingForm() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSubmitError("Sessão expirada. Recarregue a página."); return }
 
-    // Build payload for the API
-    const payload = buildApiPayload(formData, user.email ?? "")
+    try {
+      // 1. Salvar respostas — CRÍTICO: não prosseguir se falhar
+      const objetivo = formData.b10_objetivo
+      const { error: upsertErr } = await supabase.from("onboarding_respostas").upsert({
+        user_id: user.id,
+        objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
+        descricao_clientes: (formData.b3_ideal as string) || "",
+        canais_ativos: Array.isArray(formData.b4_origem) ? formData.b4_origem : [],
+        contexto_extra: buildRichContext(formData),
+        completed: true,
+      }, { onConflict: "user_id" })
 
-    // Persist to onboarding_respostas
-    const objetivo = formData.b10_objetivo
-    await supabase.from("onboarding_respostas").upsert({
-      user_id: user.id,
-      objetivos: objetivo ? (Array.isArray(objetivo) ? objetivo : [objetivo]) : [],
-      descricao_clientes: (formData.b3_ideal as string) || "",
-      canais_ativos: Array.isArray(formData.b4_origem) ? formData.b4_origem : [],
-      contexto_extra: buildRichContext(formData),
-      completed: true,
-    }, { onConflict: "user_id" })
+      if (upsertErr) {
+        console.error("[submit] Falha ao salvar respostas:", upsertErr)
+        setSubmitError("Erro ao salvar suas respostas. Verifique sua conexão e tente novamente.")
+        return
+      }
 
-    // Update profile with extracted basic fields
-    await supabase.from("profiles").update({
-      nome_negocio: (formData.b1_nome as string) || "",
-      cidade_bairro: (formData.b1_local as string) || "",
-      segmento: (formData.b1_resumo as string) || "",
-      faturamento_faixa: (formData.b2_fat as string) || "",
-      onboarding_completo: true,
-    }).eq("id", user.id)
+      // 2. Atualizar perfil
+      await supabase.from("profiles").update({
+        nome_negocio: (formData.b1_nome as string) || "",
+        cidade_bairro: (formData.b1_local as string) || "",
+        segmento: (formData.b1_resumo as string) || "",
+        faturamento_faixa: (formData.b2_fat as string) || "",
+        onboarding_completo: true,
+      }).eq("id", user.id)
 
-    router.push("/loading")
+      // 3. Só redireciona se salvou com sucesso
+      router.push("/loading")
+
+    } catch (err) {
+      console.error("[submit] Erro inesperado:", err)
+      setSubmitError("Erro inesperado. Recarregue a página e tente novamente.")
+    }
   }
 
   return (
