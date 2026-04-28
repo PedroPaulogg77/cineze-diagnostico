@@ -84,7 +84,7 @@ export default function MaturidadePage() {
         .limit(1)
         .maybeSingle()
 
-      if (!data) { router.replace("/onboarding"); return }
+      if (!data) { router.replace("/dashboard/raio-x"); return }
 
       setCanais((data.maturidade as unknown as MaturidadeCanal[]) ?? [])
       setLoading(false)

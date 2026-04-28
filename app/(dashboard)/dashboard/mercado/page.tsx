@@ -94,7 +94,7 @@ export default function MercadoPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!row) { router.replace("/onboarding"); return }
+      if (!row) { router.replace("/dashboard/raio-x"); return }
 
       setData(row.analise_mercado as unknown as AnaliseMercado)
       setLoading(false)

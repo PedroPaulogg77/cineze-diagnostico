@@ -87,7 +87,7 @@ export default function MetricasPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!row) { router.replace("/onboarding"); return }
+      if (!row) { router.replace("/dashboard/raio-x"); return }
 
       setMetricas(row.metricas as unknown as Metrica[])
       setLoading(false)

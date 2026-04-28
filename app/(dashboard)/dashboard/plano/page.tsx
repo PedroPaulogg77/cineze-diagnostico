@@ -54,7 +54,7 @@ export default function PlanoPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!row) { router.replace("/onboarding"); return }
+      if (!row) { router.replace("/dashboard/raio-x"); return }
 
       setAcoes(row.plano_acao as unknown as AcaoPlano[])
       setLoading(false)

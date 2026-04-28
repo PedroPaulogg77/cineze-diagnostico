@@ -596,8 +596,9 @@ export default function OnboardingForm() {
         return
       }
 
-      // 2. Atualizar perfil
-      await supabase.from("profiles").update({
+      // 2. Atualizar perfil — CRÍTICO: onboarding_completo deve ser true para
+      //    o middleware liberar /dashboard e para o botão de retry aparecer
+      const { error: profileErr } = await supabase.from("profiles").update({
         nome_negocio: (formData.b1_nome as string) || "",
         cidade_bairro: (formData.b1_local as string) || "",
         segmento: (formData.b1_resumo as string) || "",
@@ -605,7 +606,13 @@ export default function OnboardingForm() {
         onboarding_completo: true,
       }).eq("id", user.id)
 
-      // 3. Só redireciona se salvou com sucesso
+      if (profileErr) {
+        console.error("[submit] Falha ao atualizar perfil:", profileErr)
+        setSubmitError("Erro ao finalizar seu perfil. Suas respostas foram salvas — tente enviar novamente.")
+        return
+      }
+
+      // 3. Só redireciona se ambas as gravações tiveram sucesso
       router.push("/loading")
 
     } catch (err) {

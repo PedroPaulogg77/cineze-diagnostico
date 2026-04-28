@@ -63,9 +63,7 @@ export default function LoadingPage() {
         }
 
         if (!respostas) {
-          // Usuário ainda não completou o onboarding — redirecionar
-          router.replace("/onboarding")
-          return
+          throw new Error("Não encontramos suas respostas no banco. Recarregue a página ou volte ao formulário.")
         }
 
         payload = {

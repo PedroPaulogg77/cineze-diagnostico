@@ -91,7 +91,7 @@ export default function EmpresaPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!row) { router.replace("/onboarding"); return }
+      if (!row) { router.replace("/dashboard/raio-x"); return }
 
       setData(row.sobre_empresa as unknown as SobreEmpresa)
       setLoading(false)

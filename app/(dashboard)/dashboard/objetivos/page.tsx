@@ -87,7 +87,7 @@ export default function ObjetivosPage() {
         .limit(1)
         .maybeSingle()
 
-      if (!row) { router.replace("/onboarding"); return }
+      if (!row) { router.replace("/dashboard/raio-x"); return }
 
       setObjetivos(row.objetivos_smart as unknown as ObjetivoSMART[])
       setLoading(false)
