@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
-export const maxDuration = 60 // Allow up to 60s for Gemini processing on Vercel Pro
+export const maxDuration = 300
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase"
 import {
   PROMPT_AGENTE_1,
@@ -38,14 +38,6 @@ Contexto adicional: ${dados.contexto_extra || "Não informado"}
 `
 }
 
-function limparJson(texto: string): string {
-  return texto
-    .replace(/^```json\s*/im, "")
-    .replace(/^```\s*/im, "")
-    .replace(/\s*```\s*$/im, "")
-    .trim()
-}
-
 /**
  * Chama um agente Gemini com system prompt e mensagem do usuário.
  * Tenta 2 vezes antes de retornar null.
@@ -61,12 +53,12 @@ async function chamarAgente<T = unknown>(
   const model = genAI.getGenerativeModel({
     model: modelName,
     systemInstruction: systemPrompt,
-    generationConfig: { temperature, maxOutputTokens },
+    generationConfig: { temperature, maxOutputTokens, responseMimeType: "application/json" },
   })
 
   async function tentar(): Promise<T> {
     const result = await model.generateContent(userMessage)
-    return JSON.parse(limparJson(result.response.text())) as T
+    return JSON.parse(result.response.text()) as T
   }
 
   try {
@@ -140,11 +132,11 @@ export async function POST(request: NextRequest) {
 
   // 5. Rodar os 5 agentes especialistas em paralelo
   const [agente1, agente2, agente3, agente4, agente5] = await Promise.all([
-    chamarAgente(PROMPT_AGENTE_1, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
-    chamarAgente(PROMPT_AGENTE_2, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
-    chamarAgente(PROMPT_AGENTE_3, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
-    chamarAgente(PROMPT_AGENTE_4, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
-    chamarAgente(PROMPT_AGENTE_5, dadosFormatados, MODELO_AGENTES, 0.2, 4096),
+    chamarAgente(PROMPT_AGENTE_1, dadosFormatados, MODELO_AGENTES, 0.2, 8192),
+    chamarAgente(PROMPT_AGENTE_2, dadosFormatados, MODELO_AGENTES, 0.2, 8192),
+    chamarAgente(PROMPT_AGENTE_3, dadosFormatados, MODELO_AGENTES, 0.2, 8192),
+    chamarAgente(PROMPT_AGENTE_4, dadosFormatados, MODELO_AGENTES, 0.2, 8192),
+    chamarAgente(PROMPT_AGENTE_5, dadosFormatados, MODELO_AGENTES, 0.2, 8192),
   ])
 
   // 6. Montar mensagem para o sintetizador com todos os relatórios
