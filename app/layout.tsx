@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Cineze Diagnóstico",
-  description: "Diagnóstico empresarial inteligente",
+  title: "Diagnóstico | Cineze",
+  description: "Diagnóstico empresarial inteligente gerado por IA para acelerar seus resultados.",
 };
 
 export default function RootLayout({
