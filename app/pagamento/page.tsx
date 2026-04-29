@@ -1,4 +1,14 @@
+"use client"
+
 export default function PagamentoPage() {
+  const handleCheckout = () => {
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "InitiateCheckout")
+    }
+    // TODO: conectar ao InfinitePay via /api/pagamento/criar
+    alert("Iniciando checkout... (Evento InitiateCheckout disparado)")
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-lg p-8 bg-white rounded-2xl shadow-lg text-center">
@@ -31,9 +41,9 @@ export default function PagamentoPage() {
           ))}
         </ul>
 
-        {/* TODO: conectar ao InfinitePay via /api/pagamento/webhook */}
         <button
           type="button"
+          onClick={handleCheckout}
           className="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-base"
         >
           Comprar agora

@@ -76,6 +76,17 @@ function AcessoContent() {
             // Pagamento confirmado, pedir email
             setTransactionNsuState(data.transaction_nsu)
             setEstado("email")
+
+            // Rastreio Meta Pixel: Purchase (Disparado assim que confirmamos o pagamento no polling)
+            if (typeof window !== "undefined" && window.fbq) {
+              window.fbq("track", "Purchase", {
+                value: 67.00,
+                currency: "BRL",
+                content_name: "Diagnóstico Cineze IA",
+                content_category: "Consultoria",
+                num_items: 1
+              })
+            }
           }
         }
       } catch {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { Comunicacao, NivelProblema } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -283,6 +284,12 @@ export default function ComunicacaoPage() {
           </div>
         </div>
       )}
+
+      <WhatsAppCTA
+        headline="Comunicação inconsistente faz você perder clientes todo dia"
+        body="A Cineze estrutura sua linguagem, identidade e mensagens para que cada canal comunique do jeito certo, para a pessoa certa."
+        waMessage="Olá! Vi os problemas de comunicação identificados no meu diagnóstico e gostaria de ajuda para resolvê-los."
+      />
     </div>
   )
 }

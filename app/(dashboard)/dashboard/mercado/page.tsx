@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { AnaliseMercado } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 function fmt(value: number, prefix = "R$") {
   if (!value) return "—"
@@ -256,6 +257,12 @@ export default function MercadoPage() {
           </div>
         </div>
       </div>
+
+      <WhatsAppCTA
+        headline="Você conhece o mercado — agora é hora de agir"
+        body="A Cineze usa essas oportunidades para criar campanhas e conteúdos que posicionam você à frente da concorrência."
+        waMessage="Olá! Vi minha análise de mercado no diagnóstico e quero conversar sobre como a Cineze pode me ajudar a aproveitar as oportunidades identificadas."
+      />
     </div>
   )
 }

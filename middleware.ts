@@ -89,7 +89,9 @@ export async function middleware(request: NextRequest) {
 
   // ── Rotas protegidas: /dashboard/* e /onboarding ─────────────────────────────
   const isProtected =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding")
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/relatorio")
 
   if (isProtected) {
     // 1. Sem sessão → login

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { ObjetivoSMART } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -229,6 +230,12 @@ export default function ObjetivosPage() {
           </div>
         </div>
       ))}
+
+      <WhatsAppCTA
+        headline="Objetivos claros precisam de execução consistente"
+        body="A Cineze pode ser o time que transforma esses objetivos SMART em realidade, cuidando da estratégia e execução do marketing para você."
+        waMessage="Olá! Vi meus objetivos SMART no diagnóstico. Quero entender como a Cineze pode me ajudar a alcançá-los."
+      />
     </div>
   )
 }

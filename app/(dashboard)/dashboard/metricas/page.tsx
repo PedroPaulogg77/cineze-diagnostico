@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { Metrica, FrequenciaMetrica } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts"
@@ -276,6 +277,12 @@ export default function MetricasPage() {
           )
         })}
       </div>
+
+      <WhatsAppCTA
+        headline="Métricas sem acompanhamento são só números"
+        body="A Cineze monitora esses indicadores, otimiza o que não está performando e garante que você sempre saiba onde investir."
+        waMessage="Olá! Vi as métricas do meu diagnóstico e quero entender como a Cineze pode me ajudar a acompanhar e melhorar esses resultados."
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { AcaoPlano, PrioridadeAcao } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 const PRIORIDADE_STYLE: Record<PrioridadeAcao, { color: string; bg: string; border: string }> = {
   Alta:  { color: "#EF4444", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.3)" },
@@ -262,6 +263,13 @@ export default function PlanoPage() {
           )
         })}
       </div>
+
+      <WhatsAppCTA
+        headline="Você tem o plano — falta quem execute"
+        body="A Cineze coloca esse plano em prática com anúncios, conteúdo e estratégia. Sem você precisar aprender marketing do zero."
+        buttonLabel="Quero que a Cineze execute"
+        waMessage="Olá! Vi meu plano de ação no diagnóstico e quero que a Cineze me ajude a executar essas ações."
+      />
     </div>
   )
 }

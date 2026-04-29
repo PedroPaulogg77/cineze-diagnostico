@@ -7,8 +7,9 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ResponsiveContainer,
 } from "recharts"
-import { useReactToPrint } from "react-to-print"
 import type { Pilares, NivelDiagnostico } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
+import Link from "next/link"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -227,12 +228,6 @@ export default function RaioXPage() {
   const [loading, setLoading] = useState(true)
   const [animated, setAnimated] = useState(false)
   const [chartColors, setChartColors] = useState(CHART_COLORS["light"])
-  const contentRef = useRef<HTMLDivElement>(null)
-
-  const handlePrint = useReactToPrint({
-    contentRef,
-    documentTitle: "Diagnostico-Cineze-Pro",
-  })
 
   useEffect(() => {
     function syncChartColors() {
@@ -471,6 +466,14 @@ export default function RaioXPage() {
               />
             ))}
           </div>
+        </div>
+
+        <div className="no-print">
+          <WhatsAppCTA
+            headline="Seu diagnóstico está pronto — e agora?"
+            body="A Cineze transforma esses dados em ações concretas: anúncios, conteúdo, posicionamento e estratégia executados para você."
+            waMessage="Olá! Acabei de ver meu diagnóstico completo na plataforma e quero entender como a Cineze pode me ajudar a melhorar esses resultados."
+          />
         </div>
       </div>
     </>

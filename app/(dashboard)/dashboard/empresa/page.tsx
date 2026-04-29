@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { SobreEmpresa } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -305,6 +306,12 @@ export default function EmpresaPage() {
           </div>
         </div>
       )}
+
+      <WhatsAppCTA
+        headline="Seu negócio tem pontos fortes — a Cineze amplifica isso"
+        body="Com base no perfil da sua empresa e dos seus clientes ideais, criamos estratégias que realmente conectam com quem compra de você."
+        waMessage="Olá! Vi a análise do meu negócio no diagnóstico e quero entender como a Cineze pode ajudar a escalar meus resultados."
+      />
     </div>
   )
 }

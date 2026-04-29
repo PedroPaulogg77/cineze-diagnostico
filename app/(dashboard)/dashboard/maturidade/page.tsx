@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import type { MaturidadeCanal } from "@/types"
+import { WhatsAppCTA } from "@/components/ui/WhatsAppCTA"
 
 // ─── Platform Brand Icons ──────────────────────────────────────────────────────
 
@@ -504,6 +505,12 @@ export default function MaturidadePage() {
           <ChannelCard key={idx} canal={canal} animated={animated} />
         ))}
       </div>
+
+      <WhatsAppCTA
+        headline="Cada canal abaixo do ideal é receita saindo pelo ralo"
+        body="A Cineze pode ativar e estruturar esses canais para você, de forma consistente e com resultado mensurável."
+        waMessage="Olá! Vi a análise de maturidade dos meus canais no diagnóstico. Quero entender como a Cineze pode me ajudar a ativá-los."
+      />
     </div>
   )
 }
