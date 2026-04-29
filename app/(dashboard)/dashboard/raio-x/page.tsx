@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
 import {
@@ -224,15 +224,10 @@ const CHART_COLORS: Record<string, { grid: string; tick: string }> = {
 
 export default function RaioXPage() {
   const router = useRouter()
-  const contentRef = useRef<HTMLDivElement>(null)
   const [pageData, setPageData] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [animated, setAnimated] = useState(false)
   const [chartColors, setChartColors] = useState(CHART_COLORS["light"])
-
-  const handlePrint = () => {
-    window.print()
-  }
 
   useEffect(() => {
     function syncChartColors() {
@@ -374,32 +369,23 @@ export default function RaioXPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; color: black !important; }
-          .print-container { padding: 0 !important; background: white !important; }
-          .print-card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; }
-          .dl-top-header, .dl-sidebar { display: none !important; }
-        }
-      ` }} />
 
       <div className="flex flex-col gap-6">
-        <div className="no-print flex justify-end mb-2">
-          <button
-            onClick={() => handlePrint()}
+        <div className="flex justify-end mb-2">
+          <Link
+            href="/relatorio"
+            target="_blank"
             className="flex items-center gap-2 bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
             </svg>
-            Baixar PDF
-          </button>
+            Exportar PDF
+          </Link>
         </div>
 
-        <div ref={contentRef} className="print-container flex flex-col gap-24">
+        <div className="flex flex-col gap-24">
           <div
-            className="print-card"
             style={{
               background: "var(--bg-surface)", border: "1px solid var(--border-color)",
               borderRadius: 16, padding: 32, display: "flex", gap: 40, alignItems: "center",
@@ -436,7 +422,6 @@ export default function RaioXPage() {
           </div>
 
           <div
-            className="print-card"
             style={{ background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, margin: "0 0 24px" }}>Análise por pilar</h2>
