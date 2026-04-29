@@ -1,12 +1,60 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase"
 import { enviarEmailBoasVindas } from "@/lib/email"
+import crypto from "crypto"
 
 // ─── Tipos do payload InfinitePay ─────────────────────────────────────────────
 //
 // Body recebido no webhook após pagamento confirmado.
 // O payload pode conter dados do cliente em diferentes formatos dependendo
 // de como o checkout foi criado.
+
+async function enviarCAPI(eventName: string, value: number, emailStr: string, ip: string, userAgent: string) {
+  const PIXEL_ID = process.env.META_PIXEL_ID;
+  const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+  
+  if (!PIXEL_ID || !ACCESS_TOKEN) return;
+
+  let hashedEmail = "";
+  if (emailStr && !emailStr.includes("aguardando_checkout")) {
+    hashedEmail = crypto.createHash("sha256").update(emailStr.toLowerCase().trim()).digest("hex");
+  }
+
+  const payload = {
+    data: [
+      {
+        event_name: eventName,
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: "website",
+        event_source_url: (process.env.NEXT_PUBLIC_APP_URL || "https://diagnostico.cineze.com.br") + "/acesso",
+        user_data: {
+          client_ip_address: ip,
+          client_user_agent: userAgent,
+          ...(hashedEmail ? { em: [hashedEmail] } : {})
+        },
+        custom_data: {
+          value: value,
+          currency: "BRL",
+          content_name: "Diagnóstico Cineze IA",
+          content_category: "Consultoria",
+          num_items: 1
+        }
+      }
+    ]
+  };
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    console.log(`[CAPI] Evento ${eventName} enviado:`, data);
+  } catch (err) {
+    console.error(`[CAPI] Erro ao enviar evento ${eventName}:`, err);
+  }
+}
 
 interface InfinitePayWebhookBody {
   invoice_slug?: string
@@ -156,6 +204,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
     }
   }
+
+  // Enviar evento de Compra (Purchase) via API de Conversões da Meta
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1"
+  const clientUa = request.headers.get("user-agent") || ""
+  await enviarCAPI("Purchase", 67.00, email, clientIp, clientUa)
 
   // 3. Se for placeholder (sem email real), apenas liberamos a página /acesso
   if (email === PLACEHOLDER_EMAIL) {
