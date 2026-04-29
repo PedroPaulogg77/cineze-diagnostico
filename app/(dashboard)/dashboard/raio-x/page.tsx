@@ -224,10 +224,15 @@ const CHART_COLORS: Record<string, { grid: string; tick: string }> = {
 
 export default function RaioXPage() {
   const router = useRouter()
+  const contentRef = useRef<HTMLDivElement>(null)
   const [pageData, setPageData] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [animated, setAnimated] = useState(false)
   const [chartColors, setChartColors] = useState(CHART_COLORS["light"])
+
+  const handlePrint = () => {
+    window.print()
+  }
 
   useEffect(() => {
     function syncChartColors() {
