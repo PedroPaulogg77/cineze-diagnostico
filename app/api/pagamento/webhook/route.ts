@@ -9,7 +9,7 @@ import crypto from "crypto"
 // O payload pode conter dados do cliente em diferentes formatos dependendo
 // de como o checkout foi criado.
 
-async function enviarCAPI(eventName: string, value: number, emailStr: string, ip: string, userAgent: string) {
+async function enviarCAPI(eventName: string, value: number, emailStr: string, ip: string, userAgent: string, eventId?: string) {
   const PIXEL_ID = process.env.META_PIXEL_ID;
   const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   
@@ -27,6 +27,7 @@ async function enviarCAPI(eventName: string, value: number, emailStr: string, ip
         event_time: Math.floor(Date.now() / 1000),
         action_source: "website",
         event_source_url: (process.env.NEXT_PUBLIC_APP_URL || "https://diagnostico.cineze.com.br") + "/acesso",
+        event_id: eventId,
         user_data: {
           client_ip_address: ip,
           client_user_agent: userAgent,
@@ -208,7 +209,7 @@ export async function POST(request: NextRequest) {
   // Enviar evento de Compra (Purchase) via API de Conversões da Meta
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1"
   const clientUa = request.headers.get("user-agent") || ""
-  await enviarCAPI("Purchase", 67.00, email, clientIp, clientUa)
+  await enviarCAPI("Purchase", 67.00, email, clientIp, clientUa, order_nsu)
 
   // 3. Se for placeholder (sem email real), apenas liberamos a página /acesso
   if (email === PLACEHOLDER_EMAIL) {

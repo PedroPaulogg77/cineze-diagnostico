@@ -85,7 +85,7 @@ function AcessoContent() {
                 content_name: "Diagnóstico Cineze IA",
                 content_category: "Consultoria",
                 num_items: 1
-              })
+              }, { eventID: orderNsu })
             }
           }
         }
